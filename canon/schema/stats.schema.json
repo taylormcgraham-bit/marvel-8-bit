@@ -1,0 +1,212 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CharacterStats",
+  "description": "Game-facing stats for a character. Narrative canon lives in bible.md; this file is what the engine loads.",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "role",
+    "tier",
+    "grid",
+    "traits",
+    "moves",
+    "palette",
+    "homeLocation"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "description": "Folder slug, e.g. spider-man"
+    },
+    "name": {
+      "type": "string",
+      "description": "Display name, e.g. Spider-Man"
+    },
+    "civilianName": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "hero",
+        "villain",
+        "antihero",
+        "supporting"
+      ]
+    },
+    "tier": {
+      "type": "string",
+      "enum": [
+        "street",
+        "city",
+        "world",
+        "cosmic"
+      ],
+      "description": "Threat scale. Determines who the Showrunner may pair in a fight without it being a stomp."
+    },
+    "grid": {
+      "type": "object",
+      "description": "Marvel Handbook power grid, 1-7.",
+      "required": [
+        "int",
+        "str",
+        "spd",
+        "dur",
+        "nrg",
+        "fgt"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "int": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 7
+        },
+        "str": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 7
+        },
+        "spd": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 7
+        },
+        "dur": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 7
+        },
+        "nrg": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 7
+        },
+        "fgt": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 7
+        }
+      }
+    },
+    "traits": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9-]+$"
+      },
+      "description": "Kebab-case mechanical tags honored by the Combat Engine and Tactician, e.g. protects-civilians-first, no-kill-code, flight, healing-factor, secret-identity, resource-<name>."
+    },
+    "moves": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "power",
+          "description"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]+$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "light",
+              "heavy",
+              "ranged",
+              "control",
+              "defense",
+              "mobility",
+              "utility",
+              "rescue",
+              "ultimate"
+            ]
+          },
+          "power": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10,
+            "description": "Relative damage/effect strength within this character's kit. 0 for pure utility."
+          },
+          "cost": {
+            "type": "string",
+            "description": "Optional resource cost, e.g. 'web-fluid:1', 'stamina:2', 'armor-power:3'."
+          },
+          "description": {
+            "type": "string",
+            "description": "One sentence the renderer and Tactician can both use."
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "palette": {
+      "type": "object",
+      "description": "Three NES-style hex colors used for the procedural placeholder sprite until real art exists.",
+      "required": [
+        "primary",
+        "secondary",
+        "accent"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "primary": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "secondary": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "accent": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        }
+      }
+    },
+    "homeLocation": {
+      "type": "string",
+      "description": "Location slug where the character spawns/returns, e.g. forest-hills, avengers-tower, latveria-castle."
+    },
+    "factions": {
+      "type": "object",
+      "description": "Starting standing with factions, -100..100.",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": -100,
+        "maximum": 100
+      }
+    },
+    "leitmotif": {
+      "type": "string",
+      "description": "A few words describing the chiptune theme, for later audio work."
+    },
+    "resources": {
+      "type": "object",
+      "description": "Trackable, depletable resources the engine enforces, e.g. {\"web-fluid\": 3}. Keys match the resource names used in move costs.",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    }
+  }
+}

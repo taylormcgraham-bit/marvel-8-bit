@@ -1,0 +1,13 @@
+html, body { margin: 0; height: 100%; background: #0b0b14; overflow: hidden; }
+#game { width: 100vw; height: 100vh; display: grid; place-items: center; }
+#game canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
+#badge {
+  position: fixed; bottom: 6px; right: 10px; font: 10px "Press Start 2P", monospace; color: #8d8d8d;
+  letter-spacing: 1px; pointer-events: none; text-shadow: 0 1px 0 #000;
+}
+#console {
+  position: fixed; left: 0; bottom: 0; width: 100%; max-height: 40vh; margin: 0; overflow: auto;
+  background: rgba(0,0,0,.85); color: #c8c8c8; font: 11px/1.5 monospace; padding: 8px 12px; box-sizing: border-box;
+  border-top: 2px solid #3a3a5a;
+}
+#console .reject { color: #ff7a7a; } #console .warn { color: #ffd37a; } #console .info { color: #8fd3ff; }

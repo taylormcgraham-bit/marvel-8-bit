@@ -1,0 +1,29 @@
+{
+  "id": "red-skull",
+  "name": "Red Skull",
+  "civilianName": "Johann Shmidt",
+  "role": "villain",
+  "tier": "world",
+  "grid": { "int": 5, "str": 3, "spd": 2, "dur": 3, "nrg": 1, "fgt": 5 },
+  "traits": [
+    "super-soldier-body", "master-strategist", "master-tactician-vs-cap", "dust-of-death",
+    "commands-minions", "always-has-exit", "hostage-taker", "propagandist", "monologues",
+    "enraged-by-mockery", "proxies-first", "lethal-villain", "resource-dust-of-death", "resource-hydra-cells"
+  ],
+  "moves": [
+    { "id": "knife-strike", "name": "Knife Strike", "kind": "light", "power": 3, "description": "A fast combat-knife slash from Nazi close-quarters doctrine.", "tags": ["melee", "bleed"] },
+    { "id": "super-soldier-blow", "name": "Super-Soldier Blow", "kind": "heavy", "power": 5, "cost": "stamina:1", "description": "A full-force strike from the cloned Rogers body.", "tags": ["melee", "knockback"] },
+    { "id": "luger-shot", "name": "Luger Shot", "kind": "ranged", "power": 4, "description": "A precise pistol shot at a limb, a hostage, or a hero's gear.", "tags": ["gun", "precise"] },
+    { "id": "dust-of-death", "name": "Dust of Death", "kind": "ranged", "power": 7, "cost": "dust-of-death:1", "description": "A cloud of red powder; kills unnamed mooks instantly, deals heavy damage and inflicts terror on heroes and named characters.", "tags": ["lethal-to-mooks", "terror", "short-range", "line-of-sight"] },
+    { "id": "hydra-volley", "name": "Hydra Volley", "kind": "utility", "power": 3, "cost": "hydra-cells:0", "description": "Orders present Hydra troops to concentrate fire on one target.", "tags": ["command", "minions", "ranged"] },
+    { "id": "hostage-gambit", "name": "Hostage Gambit", "kind": "control", "power": 0, "description": "Seizes a civilian or downed ally at knifepoint; heroes with protects-civilians-first must spend a round on Rescue.", "tags": ["civilian", "hostage"] },
+    { "id": "ideological-taunt", "name": "Ideological Taunt", "kind": "utility", "power": 0, "description": "A cold speech that lowers enemy morale for two rounds; Captain America is immune.", "tags": ["debuff", "morale", "cap-immune"] },
+    { "id": "parry-and-riposte", "name": "Parry and Riposte", "kind": "defense", "power": 2, "description": "Reads an incoming melee attack, deflects it, and answers with a counter-strike.", "tags": ["block", "counter", "melee-only"] },
+    { "id": "smoke-and-exit", "name": "Smoke and Exit", "kind": "mobility", "power": 0, "description": "Drops a smoke charge and moves toward his pre-planned escape route; fails if the exit is blocked.", "tags": ["escape", "reposition", "requires-exit"] },
+    { "id": "dead-man-switch", "name": "Dead-Man Switch", "kind": "ultimate", "power": 8, "cost": "stamina:2", "description": "Triggers a pre-rigged device elsewhere in the city, forcing heroes to split or absorb a collateral event; only usable in an arc where the Showrunner placed the device.", "tags": ["area", "collateral", "prepared-only", "remote"] }
+  ],
+  "palette": { "primary": "#a80020", "secondary": "#000000", "accent": "#bcbcbc" },
+  "homeLocation": "hells-kitchen",
+  "factions": { "public-opinion": -95, "nypd": -90, "shield": -100, "daily-bugle": -80, "hydra": 70, "latveria": -40, "asgard": -30, "kingpin-org": -80 },
+  "leitmotif": "A slow military march in a low minor key, snare-heavy, with a dissonant two-note skull motif that stabs over the top; the march thins to a single cold pulse when he is alone."
+}

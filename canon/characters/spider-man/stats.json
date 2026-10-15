@@ -1,0 +1,154 @@
+{
+  "id": "spider-man",
+  "name": "Spider-Man",
+  "civilianName": "Peter Parker",
+  "role": "hero",
+  "tier": "city",
+  "grid": {
+    "int": 4,
+    "str": 4,
+    "spd": 3,
+    "dur": 3,
+    "nrg": 1,
+    "fgt": 4
+  },
+  "traits": [
+    "spider-sense",
+    "wall-crawl",
+    "web-shooter",
+    "protects-civilians-first",
+    "no-kill-code",
+    "quips-under-pressure",
+    "secret-identity",
+    "fast-heal",
+    "resource-web-fluid",
+    "acrobat"
+  ],
+  "moves": [
+    {
+      "id": "web-line",
+      "name": "Web Line",
+      "kind": "control",
+      "power": 2,
+      "cost": "web-fluid:1",
+      "description": "Yanks a weapon from a hand or pulls a foe off balance.",
+      "tags": [
+        "disarm"
+      ]
+    },
+    {
+      "id": "web-net",
+      "name": "Web Net",
+      "kind": "control",
+      "power": 3,
+      "cost": "web-fluid:2",
+      "description": "Pins a foe to a wall or floor for a round.",
+      "tags": [
+        "immobilize"
+      ]
+    },
+    {
+      "id": "web-shield",
+      "name": "Web Shield",
+      "kind": "defense",
+      "power": 0,
+      "cost": "web-fluid:1",
+      "description": "Thick web barrier that absorbs one ranged hit.",
+      "tags": [
+        "block"
+      ]
+    },
+    {
+      "id": "swing-kick",
+      "name": "Swing Kick",
+      "kind": "mobility",
+      "power": 4,
+      "cost": "web-fluid:1",
+      "description": "Closes distance on a web line and lands a two-footed kick.",
+      "tags": [
+        "gap-closer"
+      ]
+    },
+    {
+      "id": "flurry",
+      "name": "Flurry",
+      "kind": "light",
+      "power": 3,
+      "description": "Rapid strikes too fast to follow.",
+      "tags": [
+        "multi-hit"
+      ]
+    },
+    {
+      "id": "haymaker",
+      "name": "Haymaker",
+      "kind": "heavy",
+      "power": 6,
+      "cost": "stamina:2",
+      "description": "Full-strength punch he only throws when it is personal.",
+      "tags": [
+        "knockback"
+      ]
+    },
+    {
+      "id": "leap-dodge",
+      "name": "Leap Dodge",
+      "kind": "defense",
+      "power": 0,
+      "description": "Spider-sense counter: evades the next attack and repositions.",
+      "tags": [
+        "evade",
+        "counter"
+      ]
+    },
+    {
+      "id": "web-zip",
+      "name": "Web Zip",
+      "kind": "mobility",
+      "power": 0,
+      "cost": "web-fluid:1",
+      "description": "Instant reposition to any surface in range.",
+      "tags": [
+        "reposition"
+      ]
+    },
+    {
+      "id": "improvised-weapon",
+      "name": "Improvised Weapon",
+      "kind": "heavy",
+      "power": 5,
+      "description": "Lamppost, car door, or manhole cover, swung hard.",
+      "tags": [
+        "environment"
+      ]
+    },
+    {
+      "id": "rescue",
+      "name": "Rescue",
+      "kind": "rescue",
+      "power": 0,
+      "cost": "web-fluid:1",
+      "description": "Spends the round pulling a civilian clear; raises morale.",
+      "tags": [
+        "civilian"
+      ]
+    }
+  ],
+  "palette": {
+    "primary": "#d82800",
+    "secondary": "#0058f8",
+    "accent": "#fcfcfc"
+  },
+  "homeLocation": "forest-hills",
+  "factions": {
+    "public-opinion": 20,
+    "nypd": -10,
+    "daily-bugle": -60,
+    "shield": 30,
+    "kingpin-org": -70
+  },
+  "leitmotif": "Bouncy, syncopated lead over a swinging bassline; drops to a lonely minor melody on rooftops.",
+  "resources": {
+    "web-fluid": 6
+  }
+}

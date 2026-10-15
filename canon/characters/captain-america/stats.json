@@ -1,0 +1,29 @@
+{
+  "id": "captain-america",
+  "name": "Captain America",
+  "civilianName": "Steve Rogers",
+  "role": "hero",
+  "tier": "city",
+  "grid": { "int": 3, "str": 3, "spd": 2, "dur": 3, "nrg": 1, "fgt": 6 },
+  "traits": [
+    "peak-human", "master-tactician", "shield-combat", "protects-civilians-first",
+    "lethal-force-last-resort", "inspires-allies", "never-retreats-with-ally-down",
+    "accepts-duels", "public-identity", "enhanced-metabolism", "resource-shield"
+  ],
+  "moves": [
+    { "id": "shield-throw", "name": "Shield Throw", "kind": "ranged", "power": 4, "cost": "shield:thrown", "description": "Hurls the shield to disarm or stagger a foe; it ricochets and returns next round.", "tags": ["disarm", "ricochet", "returns"] },
+    { "id": "ricochet-volley", "name": "Ricochet Volley", "kind": "ranged", "power": 5, "cost": "shield:thrown", "description": "Banks the shield off walls to strike up to three targets before it comes back.", "tags": ["multi-hit", "ricochet", "returns"] },
+    { "id": "shield-bash", "name": "Shield Bash", "kind": "heavy", "power": 6, "description": "Drives the shield edge-first into a foe with his full weight behind it.", "tags": ["knockback"] },
+    { "id": "combination", "name": "Combination", "kind": "light", "power": 3, "description": "A boxing and judo chain too fast and clean for most opponents to answer.", "tags": ["multi-hit"] },
+    { "id": "shield-block", "name": "Shield Block", "kind": "defense", "power": 0, "description": "Absorbs almost any single incoming blow or blast behind the vibranium disc.", "tags": ["block", "requires-shield"] },
+    { "id": "shield-vault", "name": "Shield Vault", "kind": "mobility", "power": 2, "description": "Plants the shield as a step to vault a gap, a wall, or an enemy's guard.", "tags": ["gap-closer", "reposition"] },
+    { "id": "takedown", "name": "Takedown", "kind": "control", "power": 3, "description": "Grapples and pins a foe to the ground for a round.", "tags": ["immobilize", "grapple"] },
+    { "id": "rally", "name": "Rally", "kind": "utility", "power": 0, "cost": "stamina:1", "description": "Spends the round calling the play; allies with positive relationship gain a buff.", "tags": ["buff", "leadership"] },
+    { "id": "recover-shield", "name": "Recover Shield", "kind": "mobility", "power": 0, "description": "Dives for a lost or thrown shield and returns it to hand.", "tags": ["reposition", "resource"] },
+    { "id": "rescue", "name": "Rescue", "kind": "rescue", "power": 0, "description": "Puts his body and shield between a civilian and harm for the round; raises morale.", "tags": ["civilian"] }
+  ],
+  "palette": { "primary": "#0000bc", "secondary": "#a80020", "accent": "#fcfcfc" },
+  "homeLocation": "avengers-tower",
+  "factions": { "public-opinion": 85, "nypd": 70, "daily-bugle": 50, "shield": 60, "hydra": -100, "latveria": -40, "asgard": 60, "wakanda": 50, "kingpin-org": -60 },
+  "leitmotif": "Slow march in a major key, snare rolls under a brass-like square lead; a lone horn line when the shield is lost."
+}

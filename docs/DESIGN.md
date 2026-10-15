@@ -233,8 +233,8 @@ boss arena).
 
 | Phase | Goal | Done when |
 |---|---|---|
-| **0. Canon** | Write bibles for the 12 launch characters, world rules, faction definitions, location histories. | Bibles reviewed by you. |
-| **1. Theater** | One district, three characters, Scene Director + Continuity Editor only. Move / say / emote beats render in Phaser. | You can watch Spidey and Goblin banter on a rooftop for 20 minutes without it breaking. |
+| **0. Canon** ✅ | Write bibles for the 12 launch characters, world rules, faction definitions, location histories. | Bibles reviewed by you. |
+| **1. Theater** ✅ | One district, three characters, Scene Director + Continuity Editor only. Move / say / emote beats render in Phaser. | You can watch Spidey and Goblin banter on a rooftop for 20 minutes without it breaking. |
 | **2. Game** | Combat Engine, Tactician, stats, HP, injuries, on-map fights, HUD. | A fight looks and feels like a game, outcomes persist. |
 | **3. Story** | Showrunner, arcs as issues, quest log, title cards, Chronicle, Editor's Desk. | A full 3-act issue plays start to finish and your notes shape the next one. |
 | **4. World** | More districts and realms, World Sim (clock, weather, schedules, scheme meters), factions, Off-Panel Catch-Up and recaps. | You can close it for a day and come back to a living world. |
@@ -242,7 +242,28 @@ boss arena).
 
 ---
 
-## 12. Open questions
+## 12. Implementation notes (Phase 1)
+
+- **Event contract** lives in `shared/events.ts` (zod). Beats are what agents may propose;
+  events are what the engine emitted. The theater only ever sees events.
+- **Markers, not coordinates.** The Director stages characters at named spots on the map
+  (`water-tower`, `ledge-north`, `skylight`...). Maps are in `shared/maps.ts` until Phase 4
+  moves them to Tiled JSON.
+- **Combat resolution** is in `server/src/engine.ts`: to-hit from fighting skill vs. speed,
+  trait modifiers (`spider-sense`, `radar-sense`, `healing-factor`), block from durability,
+  damage from move power and strength, seeded RNG. 0 HP is knocked out, never dead.
+- **Resources** declared in `stats.json` (`"resources": {"web-fluid": 6}`) are decremented by
+  move costs and enforced: a strike that cannot be paid for is rejected and the Director is
+  told, which is how "out of web fluid" becomes a story beat instead of a bug.
+- **Prompt caching.** Bibles and move lists sit in the system prompt with a 1-hour cache
+  breakpoint; only the volatile stage state and transcript go in the user turn.
+- **Pacing.** The theater reports its queued playback time every second; the engine asks
+  the Director for more only when that drops under `LEAD_MS`, and only while a viewer is
+  connected. Closing the tab stops generation entirely (pillar 5).
+- **Procedural art.** All tiles, sprites, portraits and FX are drawn at boot from palettes in
+  `client/src/render/pixels.ts`. Real pixel art replaces texture keys one for one.
+
+## 13. Open questions
 
 - Game-time to real-time ratio while watching (leaning 1 game-hour ≈ 10 real minutes).
 - Permadeath policy: canon-faithful (deaths are rare, big, and sometimes reversed) vs. never.

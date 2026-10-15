@@ -1,0 +1,29 @@
+{
+  "id": "thor",
+  "name": "Thor",
+  "civilianName": "Thor Odinson",
+  "role": "hero",
+  "tier": "cosmic",
+  "grid": { "int": 2, "str": 7, "spd": 7, "dur": 6, "nrg": 6, "fgt": 4 },
+  "traits": [
+    "asgardian", "flight-via-hammer", "weather-control", "resource-godblast", "magic-vulnerable",
+    "honor-bound", "accepts-duels", "protects-civilians-first", "no-kill-mortals",
+    "worthiness-enchantment", "keeps-spider-man-secret", "never-lies"
+  ],
+  "moves": [
+    { "id": "mjolnir-strike", "name": "Mjolnir Strike", "kind": "heavy", "power": 8, "description": "A close-range hammer blow that cracks pavement and sends foes through walls.", "tags": ["knockback", "requires-hammer"] },
+    { "id": "hammer-throw", "name": "Hammer Throw", "kind": "ranged", "power": 7, "cost": "hammer:thrown", "description": "Hurls Mjolnir through anything in its path; it returns next round and he cannot fly until it does.", "tags": ["pierce", "returns", "disarm"] },
+    { "id": "lightning-call", "name": "Lightning Call", "kind": "ranged", "power": 7, "cost": "stamina:2", "description": "Channels a lightning bolt through the hammer at any target he can see; hits everyone in an enclosed space.", "tags": ["energy", "area-indoors"] },
+    { "id": "storm-summon", "name": "Storm Summon", "kind": "utility", "power": 0, "cost": "stamina:1", "description": "Spends a round raising a storm that buffs lightning and blinds and slows foes.", "tags": ["weather", "buff", "debuff"] },
+    { "id": "thunderclap", "name": "Thunderclap", "kind": "control", "power": 5, "description": "Slams Mjolnir to the ground, knocking down and stunning everything nearby.", "tags": ["area", "knockdown", "stun"] },
+    { "id": "hammer-whirl", "name": "Hammer Whirl", "kind": "defense", "power": 0, "description": "Spins the hammer into a shield that deflects projectiles and absorbs energy.", "tags": ["block", "energy-absorb", "requires-hammer"] },
+    { "id": "flight-charge", "name": "Flight Charge", "kind": "mobility", "power": 4, "description": "Throws the hammer and rides it into a foe or to a new position.", "tags": ["gap-closer", "aerial", "requires-hammer"] },
+    { "id": "asgardian-grapple", "name": "Asgardian Grapple", "kind": "heavy", "power": 7, "description": "Seizes a foe and hurls them through the nearest piece of scenery.", "tags": ["grapple", "environment", "knockback"] },
+    { "id": "godblast", "name": "Godblast", "kind": "ultimate", "power": 10, "cost": "godblast-charge:1", "description": "Channels his life force through Mjolnir into one beam; leaves him drained for days.", "tags": ["energy", "once-per-arc", "self-drain"] },
+    { "id": "rescue", "name": "Rescue", "kind": "rescue", "power": 0, "description": "Carries civilians or a downed ally clear by air; raises morale.", "tags": ["civilian", "aerial"] }
+  ],
+  "palette": { "primary": "#3cbcfc", "secondary": "#d82800", "accent": "#f8d878" },
+  "homeLocation": "asgard",
+  "factions": { "public-opinion": 70, "nypd": 30, "daily-bugle": 40, "shield": 20, "asgard": 95, "latveria": -70, "hydra": -60, "wakanda": 30, "kingpin-org": -20 },
+  "leitmotif": "Wide brass-style fifths over rolling timpani-like noise channel; thunder sweeps on the noise channel when the storm comes in."
+}

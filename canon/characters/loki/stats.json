@@ -1,0 +1,30 @@
+{
+  "id": "loki",
+  "name": "Loki",
+  "civilianName": "Loki Laufeyson",
+  "role": "villain",
+  "tier": "world",
+  "grid": { "int": 5, "str": 5, "spd": 3, "dur": 6, "nrg": 6, "fgt": 4 },
+  "traits": [
+    "sorcery", "illusionist", "shapeshifter", "teleport", "asgardian", "flight",
+    "literal-truth", "oath-bound", "monologues", "needs-audience", "cannot-kill-thor",
+    "spares-children", "resource-decoys", "resource-disguise", "favor-owed-spider-man"
+  ],
+  "moves": [
+    { "id": "mystic-bolt", "name": "Mystic Bolt", "kind": "ranged", "power": 6, "cost": "stamina:1", "description": "Green sorcerous blast thrown from the hand.", "tags": ["magic", "energy"] },
+    { "id": "mirage", "name": "Mirage", "kind": "utility", "power": 0, "cost": "stamina:1", "description": "Spawns up to three decoys with no mass or heat; each costs him -1 to attack while maintained.", "tags": ["illusion", "decoy", "max-3"] },
+    { "id": "borrowed-face", "name": "Borrowed Face", "kind": "utility", "power": 0, "cost": "stamina:1", "description": "Takes another's form over a full round; knows only what Loki knows.", "tags": ["shapeshift", "disguise", "knowledge-limited"] },
+    { "id": "whisper", "name": "Whisper", "kind": "control", "power": 3, "description": "Telepathic suggestion that turns a weak-willed foe's next action; fails against strong wills.", "tags": ["mind", "suggestion"] },
+    { "id": "enchanted-shackles", "name": "Enchanted Shackles", "kind": "control", "power": 4, "cost": "stamina:2", "description": "Conjured chains that bind a foe for a round.", "tags": ["magic", "immobilize"] },
+    { "id": "sidestep", "name": "Sidestep", "kind": "defense", "power": 0, "description": "Swaps places with a decoy so the blow lands on nothing.", "tags": ["evade", "illusion"] },
+    { "id": "realm-step", "name": "Realm Step", "kind": "mobility", "power": 0, "cost": "stamina:2", "description": "Teleports himself and nearby allies after a round of concentration; interrupted by damage.", "tags": ["teleport", "interruptible", "escape"] },
+    { "id": "transmute", "name": "Transmute", "kind": "control", "power": 5, "cost": "stamina:2", "description": "Turns a weapon, the floor or a wall into something inconvenient.", "tags": ["magic", "environment"] },
+    { "id": "giants-strike", "name": "Giant's Strike", "kind": "heavy", "power": 6, "description": "Asgardian-strength blow he throws only when cornered.", "tags": ["knockback"] },
+    { "id": "puppet-pawn", "name": "Puppet Pawn", "kind": "utility", "power": 0, "cost": "stamina:2", "description": "Empowers a minion or dupe to fight in his place for the scene.", "tags": ["buff", "minion"] },
+    { "id": "thunder-lure", "name": "Thunder Lure", "kind": "ultimate", "power": 8, "cost": "stamina:4", "description": "A prepared trap that turns a hero's own power against them; once per arc.", "tags": ["once-per-arc", "trap"] }
+  ],
+  "palette": { "primary": "#00b800", "secondary": "#f8b800", "accent": "#005800" },
+  "homeLocation": "asgard",
+  "factions": { "public-opinion": -50, "nypd": -20, "daily-bugle": -20, "shield": -60, "asgard": -40, "latveria": -70, "hydra": 0, "kingpin-org": 10 },
+  "leitmotif": "Sly chromatic waltz on a detuned lead with a mocking echo of Thor's fanfare; drops to a single sustained minor note when the smile goes."
+}

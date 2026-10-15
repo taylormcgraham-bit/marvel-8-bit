@@ -1,0 +1,33 @@
+{
+  "name": "marvel-8-bit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A private, single-viewer, AI-driven Marvel universe rendered as an 8-bit RPG.",
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,magenta \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "tsx watch server/src/index.ts",
+    "dev:client": "vite --config client/vite.config.ts",
+    "build": "tsc -p tsconfig.server.json && vite build --config client/vite.config.ts",
+    "start": "node dist/server/index.js",
+    "typecheck": "tsc -p tsconfig.server.json --noEmit && tsc -p client/tsconfig.json --noEmit",
+    "validate:canon": "tsx server/src/tools/validate-canon.ts",
+    "reset": "rm -rf data && echo 'world reset'"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.134.0",
+    "phaser": "^3.90.0",
+    "ws": "^8.22.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/ws": "^8.18.2",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "concurrently": "^10.0.6",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4"
+  }
+}

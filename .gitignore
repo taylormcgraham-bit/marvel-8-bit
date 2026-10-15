@@ -1,0 +1,8 @@
+node_modules/
+dist/
+data/
+.env
+.DS_Store
+inbox/*.md
+inbox/*.txt
+!inbox/README.md

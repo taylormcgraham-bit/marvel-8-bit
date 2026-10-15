@@ -1,0 +1,31 @@
+{
+  "id": "hulk",
+  "name": "Hulk",
+  "civilianName": "Bruce Banner",
+  "role": "hero",
+  "tier": "world",
+  "grid": { "int": 2, "str": 7, "spd": 3, "dur": 7, "nrg": 1, "fgt": 4 },
+  "traits": [
+    "rage-scaling-strength", "healing-factor", "gamma-immune", "transformation-banner",
+    "savage-persona", "low-cunning", "protects-the-few", "no-deliberate-kill", "collateral-heavy",
+    "super-leap", "thunderclap", "calm-vulnerable", "psychic-vulnerable", "resource-suppressant",
+    "resource-calm"
+  ],
+  "moves": [
+    { "id": "smash", "name": "Smash", "kind": "heavy", "power": 8, "description": "Two-fisted overhead blow that scales with his current rage.", "tags": ["knockback", "rage-scaling"] },
+    { "id": "thunderclap", "name": "Thunderclap", "kind": "control", "power": 5, "cost": "stamina:1", "description": "Claps his hands to send a shockwave that knocks down everyone nearby and shatters windows for a block.", "tags": ["aoe", "knockdown", "collateral", "hits-allies"] },
+    { "id": "leap", "name": "Leap", "kind": "mobility", "power": 2, "description": "Bounds blocks in one jump and craters the street on landing.", "tags": ["gap-closer", "escape", "collateral"] },
+    { "id": "ground-pound", "name": "Ground Pound", "kind": "control", "power": 6, "cost": "stamina:1", "description": "Punches the ground to shatter footing and stagger every foe in reach.", "tags": ["aoe", "stagger", "collateral"] },
+    { "id": "grab-and-throw", "name": "Grab and Throw", "kind": "heavy", "power": 7, "description": "Seizes a foe or vehicle and hurls it across the arena.", "tags": ["knockback", "environment", "rage-scaling"] },
+    { "id": "car-toss", "name": "Car Toss", "kind": "ranged", "power": 6, "description": "Throws the nearest car, bus, or chunk of masonry.", "tags": ["environment", "collateral"] },
+    { "id": "shrug-off", "name": "Shrug Off", "kind": "defense", "power": 0, "description": "Ignores the next hit and gets angrier for having been hit at all.", "tags": ["absorb", "rage-gain"] },
+    { "id": "rage-build", "name": "Rage Build", "kind": "utility", "power": 0, "description": "Roars; strength rises and judgment falls for the rest of the fight.", "tags": ["buff-str", "debuff-int", "rage-gain"] },
+    { "id": "shield-with-body", "name": "Shield With Body", "kind": "rescue", "power": 0, "description": "Covers a civilian or friend with his bulk, taking the hit meant for them.", "tags": ["civilian", "protects-the-few"] },
+    { "id": "worldbreaker-stomp", "name": "Worldbreaker Stomp", "kind": "ultimate", "power": 10, "cost": "rage:max", "description": "At maximum rage, a stomp that levels the arena and forces a scene change.", "tags": ["aoe", "arena-destroy", "scene-change", "max-rage-only"] },
+    { "id": "banner-pleads", "name": "Banner Pleads", "kind": "utility", "power": 0, "cost": "calm:10", "description": "Banner, still human, tries to talk the threat down before the change takes him.", "tags": ["banner-only", "de-escalate", "dialogue"] }
+  ],
+  "palette": { "primary": "#00a800", "secondary": "#6844fc", "accent": "#005800" },
+  "homeLocation": "avengers-tower",
+  "factions": { "public-opinion": -40, "nypd": -50, "daily-bugle": -30, "shield": -30, "kingpin-org": -20 },
+  "leitmotif": "Slow, heavy two-note bass stomp with a sad piano-style lead for Banner; the stomp speeds up and distorts as rage climbs."
+}

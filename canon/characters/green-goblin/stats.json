@@ -1,0 +1,32 @@
+{
+  "id": "green-goblin",
+  "name": "Green Goblin",
+  "civilianName": "Norman Osborn",
+  "role": "villain",
+  "tier": "city",
+  "grid": { "int": 6, "str": 4, "spd": 3, "dur": 4, "nrg": 3, "fgt": 4 },
+  "traits": [
+    "flight-glider", "goblin-formula", "regeneration-slow", "genius", "public-respectability",
+    "secret-identity", "knows-spider-man-identity", "obsession-spider-man", "kills-when-useful",
+    "hostage-taker", "gadget-dependent", "insanity-under-stress", "resource-pumpkin-bombs",
+    "resource-glider-fuel", "scheme-meter", "escape-artist"
+  ],
+  "moves": [
+    { "id": "pumpkin-bomb", "name": "Pumpkin Bomb", "kind": "ranged", "power": 6, "cost": "pumpkin-bombs:1", "description": "Thrown concussive bomb; Spider-Man can catch it and throw it back.", "tags": ["explosive", "catchable", "collateral"] },
+    { "id": "incendiary-bomb", "name": "Incendiary Bomb", "kind": "ranged", "power": 5, "cost": "pumpkin-bombs:1", "description": "Bomb that sets an area burning, forcing heroes toward civilians.", "tags": ["explosive", "aoe", "fire", "collateral"] },
+    { "id": "goblin-gas", "name": "Goblin Gas", "kind": "control", "power": 3, "cost": "pumpkin-bombs:1", "description": "Hallucinogenic gas that disorients and dulls spider-sense for a few rounds.", "tags": ["disorient", "suppress-spider-sense", "close-range"] },
+    { "id": "ghost-bomb", "name": "Ghost Bomb", "kind": "control", "power": 1, "cost": "pumpkin-bombs:1", "description": "Smoke bomb that blinds the field and covers a reposition.", "tags": ["smoke", "blind", "aoe"] },
+    { "id": "razor-bats", "name": "Razor Bats", "kind": "ranged", "power": 2, "description": "Boomeranging blades that cut web lines and nick exposed skin.", "tags": ["multi-hit", "cuts-web"] },
+    { "id": "sparkle-blast", "name": "Sparkle Blast", "kind": "ranged", "power": 4, "cost": "glove-charge:1", "description": "Electrical discharge from the gloves that stuns at short range.", "tags": ["stun", "short-range"] },
+    { "id": "glider-charge", "name": "Glider Charge", "kind": "heavy", "power": 7, "cost": "glider-fuel:1", "description": "Rams a foe with the blade-tipped glider at full speed.", "tags": ["gap-closer", "knockback", "requires-glider"] },
+    { "id": "goblin-grapple", "name": "Goblin Grapple", "kind": "heavy", "power": 5, "description": "Formula-strength grab and slam, used only when the target is already hurt.", "tags": ["grapple", "knockback"] },
+    { "id": "hostage-grab", "name": "Hostage Grab", "kind": "control", "power": 2, "cost": "glider-fuel:1", "description": "Snatches a civilian or loved one into the air, forcing protective heroes to respond.", "tags": ["hostage", "civilian", "forces-rescue"] },
+    { "id": "glider-evade", "name": "Glider Evade", "kind": "defense", "power": 0, "cost": "glider-fuel:1", "description": "Banks hard to break line of sight and avoid the next attack.", "tags": ["evade", "requires-glider"] },
+    { "id": "taunt", "name": "Taunt", "kind": "utility", "power": 0, "description": "Names a personal wound (Gwen, Harry, Aunt May) to break the target's composure.", "tags": ["debuff-morale", "dialogue", "psychological"] },
+    { "id": "vanish", "name": "Vanish", "kind": "mobility", "power": 0, "cost": "glider-fuel:2", "description": "Escapes at full speed, ending his part in the scene.", "tags": ["escape", "scene-exit", "requires-glider"] }
+  ],
+  "palette": { "primary": "#00a844", "secondary": "#6844fc", "accent": "#f87800" },
+  "homeLocation": "oscorp-tower",
+  "factions": { "public-opinion": 50, "nypd": 20, "daily-bugle": -20, "shield": -10, "kingpin-org": -30 },
+  "leitmotif": "Sinister waltz in three-four with a cackling high-register arpeggio; the same melody plays as a polite boardroom piano when Norman is in public."
+}
