@@ -34,13 +34,16 @@ On a Mac, if Gatekeeper refuses the file the first time, right-click it and choo
 Put it on Render.com so it has a private password-protected address you can bookmark on
 your phone. No terminal involved:
 
-1. Sign in at render.com (GitHub login), connect this repository.
-2. **New → Blueprint**, choose the repo and this branch. Render reads `render.yaml`.
-3. Fill in the two secrets it asks for: `ANTHROPIC_API_KEY` and `AUTH_PASSWORD` (any
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/taylormcgraham-bit/marvel-8-bit/tree/claude/ai-marvel-game-concept-u7pdj9)
+
+1. Click the button (or: sign in at render.com with GitHub, **New → Blueprint**, pick this
+   repo and this branch). The repo is private, so Render asks once to install its GitHub app
+   on it. Render reads `render.yaml` from the branch.
+2. Fill in the two secrets it asks for: `ANTHROPIC_API_KEY` and `AUTH_PASSWORD` (any
    password you like; the browser asks for it before showing anything).
-4. **Apply**. A few minutes later the game is at `https://marvel-8-bit.onrender.com` (or
-   whatever name you chose). Every push to the branch redeploys; the world state lives on
-   a 1 GB disk and survives deploys and restarts.
+3. **Apply**. A few minutes later the game is at `https://marvel-8-bit.onrender.com` (Render
+   adds a suffix if that name is taken; the dashboard shows the real one). Every push to the
+   branch redeploys; the world state lives on a 1 GB disk and survives deploys and restarts.
 
 The Starter plan (about $7 a month) is the smallest one that allows the persistent disk.
 The same `Dockerfile` also works on Fly.io (`fly.toml` is included) or any Docker host.
