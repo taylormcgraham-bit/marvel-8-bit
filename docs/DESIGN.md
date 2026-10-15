@@ -188,7 +188,10 @@ in a scene, with prompt caching so the cost is paid once.
 
 ## 8. Art direction
 
-See `docs/ART.md` for the sheet contract and the asset pipeline. The short version:
+See `docs/ART.md`. **Current direction: real-time 3D** (three.js), stylized low-poly
+characters with cel shading and outlines, a textured block world with detailed props, real
+lighting, shadows and weather, under a directed camera that follows the action. The 2D
+pixel theater remains at `/2d.html` as a fallback. The 2D notes below are kept for it.
 
 - **Blocky Minecraft-style, top-down, more detail than 8-bit.** Cube heads, boxy bodies,
   soft edges instead of black outlines, block textures on every surface, a slight 2.5D

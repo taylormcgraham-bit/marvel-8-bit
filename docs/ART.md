@@ -1,5 +1,11 @@
 # Art direction and asset pipeline
 
+> **Current direction (3D):** the main view is now a real-time 3D theater (`client/src/three/`):
+> stylized low-poly characters with cel shading and outlines, a textured world with bevelled
+> blocks and detailed props, real lighting and shadows, weather, and a camera director. The
+> 2D pixel theater survives at `/2d.html`. The sections below on the 2D pipeline still apply
+> to that page; the 3D pipeline is at the end.
+
 Target look: **blocky Minecraft-style pixel art, top-down, with more detail than 8-bit.**
 Cube heads and boxy bodies in Steve proportions, no hard cartoon outline (a soft darkened
 edge instead), block texture on every surface (bricks with cream mortar, gravel, cobblestone,
@@ -83,3 +89,24 @@ Portraits are 32×32.
 
 Doing route 3 for environments and route 1 or 2 for characters is the fastest way to the
 look you have in mind. Each piece drops in through the manifest as it arrives.
+
+
+## 3D pipeline
+
+- `client/src/three/rig.ts` builds every character from the same `look` and palette data in
+  `stats.json`: build (lean / normal / bulky / huge), head type (full-mask, cowl, helmet,
+  face, hood, skull, horned-helm), emblem symbol (by character id), cape, props (shield,
+  hammer, tentacles, cane, club, satchel). Add a new character and the rig draws it.
+- `client/src/three/world2.ts` builds each map from `shared/maps.ts`: textured floor tiles,
+  bevelled raised blocks, props by kind, point lights for lamps, torches and the holo-table;
+  `buildBackdrop` adds the sky dome, stars, skyline or mountains, and clouds.
+- `client/src/three/theater3d.ts` plays the event stream with a camera director (eases
+  toward whoever is acting, pushes in on fights, shakes on hits), procedural animation,
+  weather particles, hit effects, and DOM overlays for dialogue, captions, banners, HP and
+  stamina bars, quest log, recap and console.
+- **Upgrading art:** any rig or prop can be replaced by a glTF model. Drop the file under
+  `client/public/models/` and load it in place of the procedural group; the animation hooks
+  (`setPose`, `face`) are the only contract. Free low-poly city and character packs fit this
+  pipeline directly; Marvel costumes are textures on blocky or low-poly bodies.
+- **Review:** `/?showcase&map=<id>&tod=<dawn|day|dusk|night>&weather=<clear|rain|fog|snow|storm>`
+  spawns the whole roster on a map for a look.

@@ -17,8 +17,9 @@ npm run dev                 # engine on :8787, theater on http://localhost:5173
 With no credentials the engine falls back to a scripted mock Director, so the theater
 always plays something. Set `MOCK=1` to force it.
 
-- Press `` ` `` in the theater for the engine console (rejections, continuity notes). Press `C` to toggle scanlines.
-- `http://localhost:5173/?showcase` spawns the whole roster for art review.
+- The main view is the **3D theater**. Drag to orbit, wheel to zoom, `Q` for the quest log,
+  `` ` `` for the engine console. The 2D pixel theater is still at `/2d.html`.
+- `http://localhost:5173/?showcase&map=midtown-street&tod=day` spawns the whole roster for art review.
 - `http://localhost:8787/desk` is the **Editor's Desk**: current act and objectives, your notes
   to the Bullpen, planned-death approvals, stage condition, roster, memory.
 - `http://localhost:8787/chronicle` is the **Chronicle**: every issue as readable comic pages.
@@ -64,7 +65,8 @@ connected and starts on the next visit, which matches how the world itself works
 | `canon/schema/` | JSON schema for `stats.json` |
 | `shared/` | The event contract (`events.ts`) and map definitions, imported by both sides |
 | `server/src/` | The engine: world state, beat resolution, the Bullpen agents, pacing loop, WebSocket |
-| `client/src/` | The theater: Phaser 3 playback of events with procedural 16-bit art (`render/`) |
+| `client/src/three/` | The 3D theater: stylized rig, world builder, camera director, overlays |
+| `client/src/` | The 2D theater (Phaser 3, `/2d.html`) and the shared `look` data the rig reads |
 | `client/public/assets/` | Hand-drawn art drop zone and its `manifest.json` (see `docs/ART.md`) |
 | `docs/ART.md` | Art direction, the sprite sheet contract, and the three routes to real art |
 | `inbox/` | The Editor's Desk |

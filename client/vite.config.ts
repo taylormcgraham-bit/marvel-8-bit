@@ -13,6 +13,6 @@ export default defineConfig({
   },
   build: {
     outDir: path.resolve(here, "../dist/client"), emptyOutDir: true, target: "es2022",
-    rollupOptions: { input: { main: path.resolve(here, "index.html"), three: path.resolve(here, "3d.html") } },
+    rollupOptions: { input: { main: path.resolve(here, "index.html"), legacy: path.resolve(here, "2d.html") } },
   },
 });
