@@ -198,5 +198,9 @@
     "emblem": false,
     "twoTone": false,
     "visor": "#f8b800"
+  },
+  "resources": {
+    "armor-power": 100,
+    "spare-suit": 2
   }
 }

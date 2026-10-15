@@ -9,6 +9,8 @@ import { CHELSEA_ROOFTOP } from "../../shared/maps.js";
 import { Director } from "./agents/director.js";
 import { ContinuityEditor } from "./agents/continuity.js";
 import { MockDirector } from "./agents/mock.js";
+import { Tactician, MockTactician } from "./agents/tactician.js";
+import { runFight } from "./fight.js";
 import { loadCharacter } from "./canon.js";
 import { CONFIG } from "./config.js";
 import { Engine, type Rejection } from "./engine.js";
@@ -41,7 +43,10 @@ export class Showrunner {
   mode: "live" | "mock" = "mock";
   private director?: Director;
   private continuity?: ContinuityEditor;
+  private tactician?: Tactician;
   private mock = new MockDirector();
+  private mockTactician = new MockTactician();
+  private lastHealGameMs = 0;
   private listeners = new Set<Listener>();
   private bufferMs = 0;
   private viewers = 0;
@@ -55,9 +60,16 @@ export class Showrunner {
     this.mode = CONFIG.mock ? "mock" : "live";
     if (this.mode === "live") {
       this.director = new Director();
+      this.tactician = new Tactician();
       if (CONFIG.continuityMode === "llm") this.continuity = new ContinuityEditor();
     }
-    this.openIssue();
+    const replayed = this.world.replay();
+    if (replayed > 0 && this.world.actors.size > 0) {
+      this.log(`restored world from ${replayed} logged events; on stage: ${[...this.world.actors.values()].map((a) => `${a.name} HP ${a.hp}/${a.maxHp}`).join(", ")}`);
+    } else {
+      this.openIssue();
+    }
+    this.lastHealGameMs = this.world.clock.gameMs;
   }
 
   private log(s: string) {
@@ -88,9 +100,12 @@ export class Showrunner {
     if (this.viewers === 1) {
       const { awayMs, passedMs } = this.world.clock.resume();
       if (passedMs > 0) {
-        // Phase 4 runs Off-Panel Catch-Up here. For now the clock moves and the world is told.
+        // Phase 4 runs full Off-Panel Catch-Up here. For now the clock moves, wounds heal, and the world is told.
         this.emitNote("info", `away ${describeDuration(awayMs)}; ${describeDuration(passedMs)} of game time passed. It is now ${this.world.clock.label}.`);
         this.emit([this.engine.scene(`${describeDuration(passedMs).toUpperCase()} LATER...`)]);
+        const healed = this.engine.healOverTime(passedMs, "catch-up");
+        if (healed.length) this.emit(healed);
+        this.lastHealGameMs = this.world.clock.gameMs;
       } else if (awayMs > 60_000) {
         this.log(`viewer back after ${describeDuration(awayMs)}; within grace, no game time passed (${this.world.clock.label})`);
       }
@@ -105,7 +120,16 @@ export class Showrunner {
 
   start() {
     this.timer = setInterval(() => {
-      if (this.viewers > 0) this.world.clock.tick();
+      if (this.viewers > 0) {
+        this.world.clock.tick();
+        // heal in 10-game-minute steps while watching, never mid-fight
+        const dt = this.world.clock.gameMs - this.lastHealGameMs;
+        if (dt >= 600_000 && !this.world.inFight && !this.generating) {
+          const healed = this.engine.healOverTime(dt, "time");
+          if (healed.length) this.emit(healed);
+          this.lastHealGameMs = this.world.clock.gameMs;
+        }
+      }
       this.kick();
     }, 1000);
   }
@@ -162,15 +186,38 @@ export class Showrunner {
       }
 
       this.world.issue.sceneNote = chunk.sceneNote;
-      const { events, rejections } = this.engine.resolve(chunk.beats);
+      // beats resolve in order; a fight beat hands over to the Tactician for several rounds
+      const rejections: Rejection[] = [];
+      let played = 0;
+      for (const beat of chunk.beats) {
+        if (beat.type === "fight") {
+          const err = this.engine.checkFight(beat);
+          if (err) { rejections.push({ beat, reason: err }); continue; }
+          this.world.clock.sceneLocked = true;
+          const r = await runFight(beat, {
+            world: this.world, engine: this.engine, tactician: this.mode === "live" && this.tactician ? this.tactician : this.mockTactician,
+            emit: (evs) => { this.emit(evs); this.bufferMs += evs.reduce((s, e) => s + e.ms, 0); played += evs.length; },
+            log: (t) => this.log(t),
+          });
+          this.world.clock.sceneLocked = false;
+          this.lastHealGameMs = this.world.clock.gameMs;
+          this.log(`fight: ${r.rounds} rounds, ${r.reason}`);
+          continue;
+        }
+        const r = this.engine.resolveOne(beat);
+        if (typeof r === "string") { rejections.push({ beat, reason: r }); continue; }
+        if (!r) continue;
+        this.world.apply(r);
+        const evs: GameEvent[] = [r];
+        if (r.type === "strike") { const inj = this.engine.injuryAfter(r); if (inj) evs.push(inj); }
+        this.emit(evs);
+        this.bufferMs += evs.reduce((s, e) => s + e.ms, 0);
+        played += evs.length;
+      }
       this.lastRejections = rejections;
       for (const r of rejections) this.emitNote("reject", `${r.beat.type} by ${"who" in r.beat ? r.beat.who : "?"}: ${r.reason}`);
-      this.world.clock.sceneLocked = events.some((e) => e.type === "strike");
-      if (events.length) {
-        this.emit(events);
-        this.bufferMs += events.reduce((s, e) => s + e.ms, 0);
-      }
-      this.log(`played ${events.length} beats, rejected ${rejections.length}; buffer ~${Math.round(this.bufferMs / 1000)}s`);
+      this.world.saveState();
+      this.log(`played ${played} events, rejected ${rejections.length}; buffer ~${Math.round(this.bufferMs / 1000)}s`);
     } finally {
       this.generating = false;
     }

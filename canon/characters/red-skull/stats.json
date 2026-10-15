@@ -175,5 +175,9 @@
     "cape": false,
     "emblem": false,
     "twoTone": false
+  },
+  "resources": {
+    "dust-of-death": 3,
+    "hydra-cells": 2
   }
 }

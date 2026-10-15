@@ -71,7 +71,9 @@ connected and starts on the next visit, which matches how the world itself works
 ## How a beat gets to the screen
 
 1. The **Scene Director** (Claude, structured output) proposes 3 to 10 beats: move, say,
-   emote, face, wait, strike, rescue, caption.
+   emote, face, wait, strike, rescue, caption, or a **fight** (two sides, a round cap,
+   stakes). A fight hands over to the **Tactician**, which picks every combatant's action
+   each round in character.
 2. The **Continuity Editor** (optional model pass, `CONTINUITY=llm`) drops or rewrites
    beats that break voice or canon.
 3. The **engine** validates every beat against world state (is the character present, is
@@ -85,7 +87,8 @@ Generation only happens while a theater is connected and its playback buffer is 
 
 ## Status
 
-Phase 0 (canon) and Phase 1 (Theater) are done: one rooftop map, the launch cast, live
-Director with prompt-cached bibles, deterministic combat resolution, a persistent game
-clock, an event log, the Editor's inbox, procedural 16-bit art with a drop-in pipeline for
-hand-drawn sheets. See the roadmap in `docs/DESIGN.md` for what comes next.
+Phases 0 to 2 are done: canon for the launch roster; one rooftop map with the live Director
+and prompt-cached bibles; fights run in rounds by the Tactician with stamina, injuries that
+persist and heal over game time, and enforced resources; a world that replays its event log
+on restart; procedural block-style art with a drop-in pipeline for hand-drawn sheets. See the
+roadmap in `docs/DESIGN.md` for what comes next (Phase 3: the Showrunner).

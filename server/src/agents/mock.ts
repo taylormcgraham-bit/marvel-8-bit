@@ -51,6 +51,15 @@ export class MockDirector {
         ],
       },
       {
+        sceneNote: "It gets physical.",
+        beats: [
+          { type: "say", who: villain, text: "Enough talk.", mood: "angry" },
+          { type: "fight", sides: [[hero], [villain]], rounds: 4, stakes: `${hv(hero).name} wants to keep ${hv(villain).name} away from the street below; ${hv(villain).name} wants to rattle him and leave on his own terms.` },
+          { type: "emote", who: hero, emote: "sweat" },
+          { type: "say", who: hero, text: "Okay. Ow. Noted.", mood: "quip" },
+        ],
+      },
+      {
         sceneNote: third ? "The third party arrives." : "Regroup.",
         beats: third
           ? [

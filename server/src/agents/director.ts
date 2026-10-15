@@ -21,7 +21,9 @@ PRINCIPLES
 - Consistency is sacred. Injuries persist. Resources deplete. Nobody knows a secret identity unless the bible says they do. Dead stays dead; nobody dies here anyway (0 HP is knocked out).
 - Keep each say beat under 120 characters. Split long speeches into several beats, with reactions between them.
 - Use captions sparingly, comic-style, for time or place jumps: "MEANWHILE...", "TWO MINUTES LATER...".
+- For a real exchange of blows use a FIGHT beat: two sides, a round cap (2-6 is typical), and one line of stakes. The Tactician then plays every round in character and the engine rolls outcomes; you pick the scene back up afterward from the transcript. Use a single STRIKE beat only for a sucker punch, a warning shot, or one decisive blow.
 - A strike must name a move id from the attacker's move list and the attacker must be within ~3 tiles for melee. Move first, then strike.
+- Injuries, stamina and resources in ON STAGE are real and persist. A winded or hurt character fights worse and should act like it. Someone at 0 web fluid cannot web.
 - Do not resolve outcomes yourself. Never write "and hits" or "knocks him down" in dialogue before the engine has resolved it; react to the transcript's actual outcomes instead.
 - End each chunk at a natural hinge so the next chunk can pick up. Use sceneNote to tell your future self what you are building toward.
 
@@ -67,7 +69,8 @@ export class Director {
         .map((m) => ({ id: m.id, d: Math.hypot(m.x - a.x, m.y - a.y) }))
         .sort((p, q) => p.d - q.d)[0]!;
       const res = Object.entries(a.resources).map(([k, v]) => `${k}=${v}`).join(", ");
-      return `- ${a.name} (${a.id}): at ${near.id} (${a.x},${a.y}), facing ${a.facing}, HP ${a.hp}/${a.maxHp}${res ? ", " + res : ""}${a.hp <= 0 ? " [KNOCKED OUT]" : ""}`;
+      const inj = a.injuries.map((i) => `${i.name} (sev ${i.severity})`).join(", ");
+      return `- ${a.name} (${a.id}): at ${near.id} (${a.x},${a.y}), facing ${a.facing}, HP ${a.hp}/${a.maxHp}, stamina ${a.stamina}/${a.maxStamina}${res ? ", " + res : ""}${inj ? ", injuries: " + inj : ""}${a.hp <= 0 ? " [KNOCKED OUT]" : ""}`;
     }).join("\n");
     const transcript = world.transcript(CONFIG.transcriptWindow).join("\n") || "(nothing yet; the scene is about to begin)";
     const notes = readInbox();

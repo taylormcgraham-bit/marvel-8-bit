@@ -200,5 +200,8 @@
     "props": [
       "tentacles"
     ]
+  },
+  "resources": {
+    "arm-integrity": 4
   }
 }

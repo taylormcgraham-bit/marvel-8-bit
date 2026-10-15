@@ -185,5 +185,10 @@
     "props": [
       "cane"
     ]
+  },
+  "resources": {
+    "cane-charge": 1,
+    "war-chest": 5,
+    "leverage-files": 2
   }
 }

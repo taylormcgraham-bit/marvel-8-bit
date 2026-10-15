@@ -70,8 +70,20 @@ export const BeatRescue = z.object({
   what: z.string().max(80).describe("who or what is saved, e.g. 'a window washer on the scaffold'"),
 });
 
+/**
+ * A real exchange of blows. Hands the next rounds to the Tactician, who picks every
+ * combatant's move each round; the engine resolves them. Use strike for a single
+ * sucker punch, fight for anything that should feel like a fight.
+ */
+export const BeatFight = z.object({
+  type: z.literal("fight"),
+  sides: z.array(z.array(z.string()).min(1)).min(2).max(2).describe("two sides, each a list of character ids"),
+  rounds: z.number().int().min(1).max(8).describe("maximum rounds before the fight pauses for story"),
+  stakes: z.string().max(160).describe("what each side is trying to do, in one line; the Tactician fights toward this"),
+});
+
 export const Beat = z.discriminatedUnion("type", [
-  BeatCaption, BeatMove, BeatFace, BeatSay, BeatEmote, BeatWait, BeatStrike, BeatRescue,
+  BeatCaption, BeatMove, BeatFace, BeatSay, BeatEmote, BeatWait, BeatStrike, BeatRescue, BeatFight,
 ]);
 export type Beat = z.infer<typeof Beat>;
 
@@ -89,6 +101,18 @@ export type SceneChunk = z.infer<typeof SceneChunk>;
 
 export const StrikeOutcome = z.enum(["hit", "miss", "blocked", "countered"]);
 export type StrikeOutcome = z.infer<typeof StrikeOutcome>;
+
+export const Injury = z.object({
+  id: z.string(),
+  name: z.string(),
+  severity: z.number().int().min(1).max(3),
+  /** stat penalties applied while the injury lasts */
+  effects: z.object({ str: z.number().optional(), spd: z.number().optional(), fgt: z.number().optional(), dur: z.number().optional() }),
+  /** game-time ms at which it heals */
+  healsAt: z.number(),
+  cause: z.string(),
+});
+export type Injury = z.infer<typeof Injury>;
 
 const EventBase = z.object({
   seq: z.number().int(),
@@ -110,6 +134,43 @@ export const EvStrike = EventBase.extend(BeatStrike.shape).extend({
   damage: z.number().int(),
   targetHp: z.number().int(),
   targetMaxHp: z.number().int(),
+  /** full resulting state so a replay of the log reproduces the world exactly */
+  attackerHp: z.number().int(),
+  attackerStamina: z.number().int(),
+  targetStamina: z.number().int(),
+  spent: z.record(z.string(), z.number()).default({}),
+  /** optional short line the attacker says as they strike (Tactician-provided) */
+  line: z.string().max(80).optional(),
+});
+export const EvFightStart = EventBase.extend({
+  type: z.literal("fightStart"),
+  sides: z.array(z.array(z.string())),
+  stakes: z.string(),
+  maxRounds: z.number().int(),
+});
+export const EvRound = EventBase.extend({
+  type: z.literal("round"),
+  n: z.number().int(),
+  of: z.number().int(),
+  /** stamina regen applied at the top of the round */
+  stamina: z.record(z.string(), z.number().int()),
+});
+export const EvFightEnd = EventBase.extend({
+  type: z.literal("fightEnd"),
+  reason: z.enum(["knockout", "escape", "rounds", "stalemate"]),
+  downed: z.array(z.string()),
+  escaped: z.array(z.string()),
+  summary: z.string(),
+});
+export const EvInjury = EventBase.extend({ type: z.literal("injury"), who: z.string(), injury: Injury });
+export const EvHeal = EventBase.extend({
+  type: z.literal("heal"),
+  who: z.string(),
+  hp: z.number().int(),
+  stamina: z.number().int(),
+  /** injury ids that healed */
+  healed: z.array(z.string()),
+  reason: z.enum(["time", "recover", "catch-up"]),
 });
 export const EvTitle = EventBase.extend({
   type: z.literal("title"),
@@ -134,6 +195,10 @@ export const EvSpawn = EventBase.extend({
   facing: Dir,
   hp: z.number().int(),
   maxHp: z.number().int(),
+  stamina: z.number().int().optional(),
+  maxStamina: z.number().int().optional(),
+  resources: z.record(z.string(), z.number()).optional(),
+  injuries: z.array(Injury).optional(),
   palette: z.object({ primary: z.string(), secondary: z.string(), accent: z.string() }),
   role: z.enum(["hero", "villain", "antihero", "supporting"]),
   /** procedural-rig hints; absent when a hand-drawn sheet exists for this character */
@@ -148,6 +213,7 @@ export const EvNote = EventBase.extend({
 
 export const GameEvent = z.discriminatedUnion("type", [
   EvCaption, EvMove, EvFace, EvSay, EvEmote, EvWait, EvRescue, EvStrike,
+  EvFightStart, EvRound, EvFightEnd, EvInjury, EvHeal,
   EvTitle, EvScene, EvSpawn, EvDespawn, EvNote,
 ]);
 export type GameEvent = z.infer<typeof GameEvent>;

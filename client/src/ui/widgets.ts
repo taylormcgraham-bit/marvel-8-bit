@@ -123,26 +123,47 @@ export class TitleCard {
 export class HpBar {
   root: Phaser.GameObjects.Container;
   private fill: Phaser.GameObjects.Rectangle;
+  private stamina: Phaser.GameObjects.Rectangle;
+  private injuries: Phaser.GameObjects.Text;
   private hideAt = 0;
-  constructor(scene: Phaser.Scene, x: number, y: number, name: string, pal: Palette, alignRight: boolean) {
+  /** while true the bar never fades (during a fight) */
+  pinned = false;
+  constructor(scene: Phaser.Scene, x: number, y: number, name: string, pal: Palette, private alignRight: boolean) {
     const w = 80;
     this.root = scene.add.container(x, y).setDepth(950).setAlpha(0);
     const label = scene.add.text(alignRight ? w : 0, 0, name.toUpperCase(), { ...FONT, fontSize: "6px", stroke: PAL.black, strokeThickness: 2 }).setOrigin(alignRight ? 1 : 0, 0);
-    const shadow = scene.add.rectangle(1, 10, w, 7, 0x000000, 0.6).setOrigin(0);
-    const rim = scene.add.rectangle(0, 9, w, 7, 0xe8e8f8).setOrigin(0);
+    const shadow = scene.add.rectangle(1, 10, w, 10, 0x000000, 0.6).setOrigin(0);
+    const rim = scene.add.rectangle(0, 9, w, 10, 0xe8e8f8).setOrigin(0);
     const inner = scene.add.rectangle(1, 10, w - 2, 5, 0x202030).setOrigin(0);
     this.fill = scene.add.rectangle(1, 10, w - 2, 5, Phaser.Display.Color.HexStringToColor(pal.primary).color).setOrigin(0);
     const gloss = scene.add.rectangle(1, 10, w - 2, 1, 0xffffff, 0.35).setOrigin(0);
-    this.root.add([label, shadow, rim, inner, this.fill, gloss]);
+    const stInner = scene.add.rectangle(1, 16, w - 2, 2, 0x202030).setOrigin(0);
+    this.stamina = scene.add.rectangle(1, 16, w - 2, 2, 0x48b8ff).setOrigin(0);
+    this.injuries = scene.add.text(alignRight ? w : 0, 21, "", { ...FONT, fontSize: "6px", color: "#ff8a8a", stroke: PAL.black, strokeThickness: 2 }).setOrigin(alignRight ? 1 : 0, 0);
+    this.root.add([label, shadow, rim, inner, this.fill, gloss, stInner, this.stamina, this.injuries]);
   }
-  set(hp: number, max: number, scene: Phaser.Scene) {
+  set(hp: number, max: number, scene: Phaser.Scene, stamina?: number, maxStamina?: number) {
     const ratio = Math.max(0, hp / max);
     scene.tweens.add({ targets: this.fill, width: Math.max(0, Math.round(78 * ratio)), duration: 300 });
     this.fill.setFillStyle(ratio > 0.5 ? 0x58d854 : ratio > 0.25 ? 0xffd860 : 0xe02828);
-    this.root.setAlpha(1);
-    this.hideAt = scene.time.now + 9000;
+    if (stamina !== undefined && maxStamina) scene.tweens.add({ targets: this.stamina, width: Math.max(0, Math.round(78 * Math.max(0, stamina / maxStamina))), duration: 300 });
+    this.show(scene);
   }
-  tick(scene: Phaser.Scene) { if (this.root.alpha > 0 && scene.time.now > this.hideAt) scene.tweens.add({ targets: this.root, alpha: 0, duration: 600 }); }
+  setInjuries(names: string[]) { this.injuries.setText(names.slice(0, 2).join(" · ").toUpperCase()); }
+  show(scene: Phaser.Scene) { this.root.setAlpha(1); this.hideAt = scene.time.now + 9000; }
+  tick(scene: Phaser.Scene) { if (!this.pinned && this.root.alpha > 0 && scene.time.now > this.hideAt) scene.tweens.add({ targets: this.root, alpha: 0, duration: 600 }); }
+}
+
+/** Big centered banner: "FIGHT!", "ROUND 2", "K.O.". */
+export function banner(scene: Phaser.Scene, viewW: number, viewH: number, text: string, color: string, ms: number, sub?: string): Promise<void> {
+  const band = scene.add.rectangle(0, viewH / 2 - 16, viewW, 32, 0x000000, 0.55).setOrigin(0).setDepth(1500).setAlpha(0);
+  const t = scene.add.text(viewW / 2, viewH / 2 - (sub ? 6 : 0), text, { ...FONT, fontSize: "14px", color, stroke: PAL.black, strokeThickness: 4 }).setOrigin(0.5).setDepth(1501).setScale(2).setAlpha(0);
+  const s = sub ? scene.add.text(viewW / 2, viewH / 2 + 9, sub, { ...FONT, fontSize: "6px", color: "#d0d0e0", stroke: PAL.black, strokeThickness: 2 }).setOrigin(0.5).setDepth(1501).setAlpha(0) : null;
+  scene.tweens.add({ targets: [band, t, s].filter(Boolean), alpha: 1, duration: 120 });
+  scene.tweens.add({ targets: t, scale: 1, duration: 220, ease: "Back.easeOut" });
+  return new Promise((r) => scene.time.delayedCall(ms - 250, () => {
+    scene.tweens.add({ targets: [band, t, s].filter(Boolean), alpha: 0, duration: 250, onComplete: () => { band.destroy(); t.destroy(); s?.destroy(); r(); } });
+  }));
 }
 
 export function floatText(scene: Phaser.Scene, x: number, y: number, text: string, color: string, big = false) {

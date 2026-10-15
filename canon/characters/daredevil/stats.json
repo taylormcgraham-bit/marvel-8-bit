@@ -181,5 +181,8 @@
     "props": [
       "club"
     ]
+  },
+  "resources": {
+    "billy-club-cable": 1
   }
 }

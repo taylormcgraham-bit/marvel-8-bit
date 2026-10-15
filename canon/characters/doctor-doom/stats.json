@@ -185,5 +185,9 @@
     "emblem": false,
     "twoTone": false,
     "visor": "#a8a8b8"
+  },
+  "resources": {
+    "armor-power": 100,
+    "doombots": 12
   }
 }

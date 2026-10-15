@@ -187,5 +187,8 @@
     "twoTone": true,
     "skin": "#48c048",
     "hair": "#1a4a1a"
+  },
+  "resources": {
+    "calm": 60
   }
 }

@@ -206,5 +206,10 @@
     "props": [
       "satchel"
     ]
+  },
+  "resources": {
+    "pumpkin-bombs": 6,
+    "glider-fuel": 6,
+    "glove-charge": 3
   }
 }

@@ -243,7 +243,7 @@ boss arena).
 |---|---|---|
 | **0. Canon** ✅ | Write bibles for the 12 launch characters, world rules, faction definitions, location histories. | Bibles reviewed by you. |
 | **1. Theater** ✅ | One district, three characters, Scene Director + Continuity Editor only. Move / say / emote beats render in Phaser. | You can watch Spidey and Goblin banter on a rooftop for 20 minutes without it breaking. |
-| **2. Game** | Combat Engine, Tactician, stats, HP, injuries, on-map fights, HUD. | A fight looks and feels like a game, outcomes persist. |
+| **2. Game** ✅ | Combat Engine, Tactician, stats, HP, injuries, on-map fights, HUD. | A fight looks and feels like a game, outcomes persist. |
 | **3. Story** | Showrunner, arcs as issues, quest log, title cards, Chronicle, Editor's Desk. | A full 3-act issue plays start to finish and your notes shape the next one. |
 | **4. World** | More districts and realms, World Sim (clock, weather, schedules, scheme meters), factions, Off-Panel Catch-Up and recaps. | You can close it for a day and come back to a living world. |
 | **5. Polish** | Codex, cinematic camera, chiptune score, portraits, roster-request pipeline. | It feels like a PS5 game wearing an NES costume. |
@@ -270,6 +270,29 @@ boss arena).
   connected. Closing the tab stops generation entirely (pillar 5).
 - **Procedural art.** All tiles, sprites, portraits and FX are drawn at boot from palettes in
   `client/src/render/pixels.ts`. Real pixel art replaces texture keys one for one.
+
+### Phase 2 notes (Combat)
+
+- **Fight beats.** The Director proposes `fight` with two sides, a round cap and one line of
+  stakes. `server/src/fight.ts` runs the rounds: each round the **Tactician** (one call for
+  all combatants, `server/src/agents/tactician.ts`) picks strike / reposition / recover /
+  escape per fighter with an optional in-voice line; the engine resolves in initiative order
+  (speed, then fighting skill) and streams events to the theater as they resolve. A single
+  `strike` beat still exists for sucker punches.
+- **Stamina.** Max from speed and durability; moves cost by kind unless the move names a
+  `stamina:N` cost; regen each round; a winded fighter misses more and cannot throw heavies.
+- **Injuries** (`server/src/combat.ts`): a hit over a quarter of max HP, dropping under a
+  quarter HP, or a knockout leaves a named injury with stat penalties and a heal time in
+  game days (halved or quartered by healing traits). Injuries appear in the Director's and
+  Tactician's prompts, on the HUD, and persist until the clock passes `healsAt`.
+- **Resources** are declared in every `stats.json` and enforced for every move cost that
+  names them; flavor costs (`shield:thrown`) are ignored by the engine.
+- **Healing** runs in ten-game-minute steps while watching and in one step on catch-up,
+  never during a fight. Downed fighters come round at 15% HP after the fight with a
+  concussion.
+- **Persistence.** The world replays `data/events.jsonl` on startup; every event carries the
+  full resulting state it needs (HP, stamina, spent resources), so a restart reproduces the
+  world exactly. `data/world.json` keeps the Director's scene note and the RNG state.
 
 ## 13. Open questions
 

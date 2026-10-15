@@ -24,6 +24,8 @@ export const CONFIG = {
   directorModel: process.env.DIRECTOR_MODEL ?? "claude-opus-5-5",
   directorEffort: (process.env.DIRECTOR_EFFORT ?? "medium") as "low" | "medium" | "high",
   continuityModel: process.env.CONTINUITY_MODEL ?? "claude-haiku-5-5",
+  /** Tactician picks every combatant's move each round; fast tier, low effort, one call per round. */
+  tacticianModel: process.env.TACTICIAN_MODEL ?? "claude-sonnet-5-5",
   /** "rules" = deterministic checks only; "llm" = rules + Continuity Editor model pass. */
   continuityMode: (process.env.CONTINUITY ?? "rules") as "rules" | "llm",
   /** Force scripted beats even if credentials exist. */

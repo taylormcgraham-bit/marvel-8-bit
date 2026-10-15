@@ -10,7 +10,7 @@ import { VIEW_W, VIEW_H } from "../main";
 import {
   TILE, CHAR_W, CHAR_H, PAL, FRAME_INDEX, makeTiles, makeSky, makeObjects, makeCharacter, makePortrait, makeEmotes, makeFx, type Look,
 } from "../render/pixels";
-import { DialogBox, CaptionBox, TitleCard, HpBar, FONT, floatText } from "../ui/widgets";
+import { DialogBox, CaptionBox, TitleCard, HpBar, FONT, floatText, banner } from "../ui/widgets";
 
 interface Manifest {
   characters?: Record<string, { sheet: string; frameWidth?: number; frameHeight?: number; portrait?: string }>;
@@ -27,6 +27,8 @@ interface Actor {
   facing: Dir;
   tx: number; ty: number;
   hp: number; maxHp: number;
+  stamina: number; maxStamina: number;
+  injuries: string[];
   hpBar: HpBar;
   role: string;
   ko: boolean;
@@ -189,8 +191,14 @@ export class TheaterScene extends Phaser.Scene {
     const idx = this.actors.size;
     const right = idx % 2 === 1;
     const hpBar = new HpBar(this, right ? VIEW_W - 86 : 6, 26 + Math.floor(idx / 2) * 20, e.name, e.palette, right);
-    const a: Actor = { id: e.who, name: e.name, sprite, shadow, label, facing: e.facing, tx: e.x, ty: e.y, hp: e.hp, maxHp: e.maxHp, hpBar, role: e.role, ko: false };
+    const a: Actor = {
+      id: e.who, name: e.name, sprite, shadow, label, facing: e.facing, tx: e.x, ty: e.y, hp: e.hp, maxHp: e.maxHp,
+      stamina: e.stamina ?? 10, maxStamina: e.maxStamina ?? 10, injuries: (e.injuries ?? []).map((i) => i.name), hpBar, role: e.role, ko: e.hp <= 0,
+    };
     this.actors.set(e.who, a);
+    hpBar.setInjuries(a.injuries);
+    if (a.hp < a.maxHp || a.injuries.length) { hpBar.set(a.hp, a.maxHp, this, a.stamina, a.maxStamina); }
+    if (a.ko) { sprite.setFrame(FRAME_INDEX("ko", "side")); sprite.setAngle(90); sprite.setY(sprite.y - 6); }
     this.face(a, e.facing);
     this.sortDepth(a);
   }
@@ -298,6 +306,38 @@ export class TheaterScene extends Phaser.Scene {
         b.destroy(); return;
       }
       case "strike": return this.strike(e);
+      case "fightStart": {
+        for (const id of e.sides.flat()) { const a = this.actors.get(id); if (a) { a.hpBar.pinned = true; a.hpBar.set(a.hp, a.maxHp, this, a.stamina, a.maxStamina); } }
+        this.cameras.main.flash(80, 255, 255, 255, false);
+        return banner(this, VIEW_W, VIEW_H, "FIGHT!", PAL.red, e.ms, e.stakes.length < 70 ? e.stakes.toUpperCase() : undefined);
+      }
+      case "round": {
+        for (const [id, st] of Object.entries(e.stamina)) { const a = this.actors.get(id); if (a) { a.stamina = st; a.hpBar.set(a.hp, a.maxHp, this, a.stamina, a.maxStamina); } }
+        floatText(this, VIEW_W / 2, 40, `ROUND ${e.n}`, PAL.yellow, true);
+        return this.wait(e.ms);
+      }
+      case "fightEnd": {
+        for (const a of this.actors.values()) a.hpBar.pinned = false;
+        const text = e.reason === "knockout" ? "K.O." : e.reason === "escape" ? "ESCAPED" : e.reason === "stalemate" ? "STANDOFF" : "BREAK";
+        return banner(this, VIEW_W, VIEW_H, text, e.reason === "knockout" ? PAL.red : PAL.yellow, e.ms, e.summary.toUpperCase());
+      }
+      case "injury": {
+        const a = this.actors.get(e.who); if (!a) return;
+        a.injuries.push(e.injury.name); a.hpBar.setInjuries(a.injuries); a.hpBar.show(this);
+        floatText(this, a.sprite.x, a.sprite.y - CHAR_H - 12, e.injury.name.toUpperCase(), "#ff8a8a");
+        return this.wait(e.ms);
+      }
+      case "heal": {
+        const a = this.actors.get(e.who); if (!a) return;
+        const gained = e.hp - a.hp;
+        a.hp = e.hp; a.stamina = e.stamina;
+        if (e.healed.length) { a.injuries = a.injuries.filter((_n, i) => i >= e.healed.length); a.hpBar.setInjuries(a.injuries); }
+        if (a.ko && e.hp > 0) { a.ko = false; a.sprite.setAngle(0); a.sprite.setY(a.sprite.y + 6); this.face(a, a.facing); floatText(this, a.sprite.x, a.sprite.y - CHAR_H - 10, "BACK UP", PAL.green); }
+        if (e.reason === "recover" && gained === 0) floatText(this, a.sprite.x, a.sprite.y - CHAR_H - 10, "RECOVER", PAL.blue);
+        else if (gained > 0 && e.reason !== "time") floatText(this, a.sprite.x, a.sprite.y - CHAR_H - 10, `+${gained}`, PAL.green);
+        a.hpBar.set(a.hp, a.maxHp, this, a.stamina, a.maxStamina);
+        return this.wait(e.ms);
+      }
     }
   }
 
@@ -352,9 +392,14 @@ export class TheaterScene extends Phaser.Scene {
       this.cameras.main.shake(110, 0.005);
       a.sprite.setFrame(hurtFrame); a.sprite.setTintFill(0xffffff); this.time.delayedCall(70, () => a.sprite.clearTint());
     }
-    t.hp = e.targetHp; t.maxHp = e.targetMaxHp;
-    t.hpBar.set(t.hp, t.maxHp, this);
-    a.hpBar.set(a.hp, a.maxHp, this);
+    t.hp = e.targetHp; t.maxHp = e.targetMaxHp; t.stamina = e.targetStamina;
+    a.hp = e.attackerHp; a.stamina = e.attackerStamina;
+    t.hpBar.set(t.hp, t.maxHp, this, t.stamina, t.maxStamina);
+    a.hpBar.set(a.hp, a.maxHp, this, a.stamina, a.maxStamina);
+    if (e.line) {
+      const bubble = this.add.text(a.sprite.x, a.sprite.y - CHAR_H - 12, e.line, { ...FONT, fontSize: "6px", color: PAL.white, stroke: PAL.black, strokeThickness: 3, wordWrap: { width: 110 }, align: "center" }).setOrigin(0.5, 1).setDepth(996);
+      this.time.delayedCall(1800, () => bubble.destroy());
+    }
     if (t.hp <= 0 && !t.ko) {
       t.ko = true;
       t.sprite.stop(); t.sprite.setFrame(FRAME_INDEX("ko", "side")); t.sprite.setAngle(sgn > 0 ? 90 : -90);
