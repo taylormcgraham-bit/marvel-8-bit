@@ -11,5 +11,8 @@ export default defineConfig({
     port: 5173,
     proxy: { "/ws": { target: "ws://localhost:8787", ws: true }, "/api": "http://localhost:8787" },
   },
-  build: { outDir: path.resolve(here, "../dist/client"), emptyOutDir: true, target: "es2022" },
+  build: {
+    outDir: path.resolve(here, "../dist/client"), emptyOutDir: true, target: "es2022",
+    rollupOptions: { input: { main: path.resolve(here, "index.html"), three: path.resolve(here, "3d.html") } },
+  },
 });
