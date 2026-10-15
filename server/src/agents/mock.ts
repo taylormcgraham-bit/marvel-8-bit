@@ -11,7 +11,8 @@ export class MockDirector {
   next(world: World): SceneChunk {
     const ids = [...world.actors.keys()];
     const hero = ids.find((id) => world.actors.get(id)!.character.stats.role === "hero") ?? ids[0]!;
-    const villain = ids.find((id) => world.actors.get(id)!.character.stats.role === "villain") ?? ids[1] ?? hero;
+    const villainId = ids.find((id) => world.actors.get(id)!.character.stats.role === "villain");
+    const villain = villainId ?? ids[1] ?? hero;
     const third = ids.find((id) => id !== hero && id !== villain);
     const hv = (id: string) => world.actors.get(id)!;
     const firstAttack = (id: string) => hv(id).character.stats.moves.find((m) => m.power > 0 && m.kind !== "rescue")?.id ?? "flurry";
@@ -50,13 +51,21 @@ export class MockDirector {
           { type: "say", who: villain, text: "Is that all?", mood: "angry" },
         ],
       },
-      {
+      villainId ? {
         sceneNote: "It gets physical.",
         beats: [
           { type: "say", who: villain, text: "Enough talk.", mood: "angry" },
           { type: "fight", sides: [[hero], [villain]], rounds: 4, stakes: `${hv(hero).name} wants to keep ${hv(villain).name} away from the street below; ${hv(villain).name} wants to rattle him and leave on his own terms.` },
           { type: "emote", who: hero, emote: "sweat" },
           { type: "say", who: hero, text: "Okay. Ow. Noted.", mood: "quip" },
+        ],
+      } : {
+        sceneNote: "Quiet after the storm.",
+        beats: [
+          { type: "move", who: hero, to: "water-tower" },
+          { type: "emote", who: hero, emote: "..." },
+          { type: "say", who: hero, text: "He'll be back. He's always back.", mood: "worried" },
+          { type: "wait", ms: 1200 },
         ],
       },
       {

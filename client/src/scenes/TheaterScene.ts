@@ -318,6 +318,12 @@ export class TheaterScene extends Phaser.Scene {
       }
       case "fightEnd": {
         for (const a of this.actors.values()) a.hpBar.pinned = false;
+        for (const id of e.escaped) {
+          const a = this.actors.get(id); if (!a) continue;
+          this.tweens.add({ targets: [a.sprite, a.label, a.shadow], alpha: 0, duration: 500, onComplete: () => { a.sprite.destroy(); a.label.destroy(); a.shadow.destroy(); } });
+          this.tweens.add({ targets: a.hpBar.root, alpha: 0, duration: 500, onComplete: () => a.hpBar.root.destroy() });
+          this.actors.delete(id);
+        }
         const text = e.reason === "knockout" ? "K.O." : e.reason === "escape" ? "ESCAPED" : e.reason === "stalemate" ? "STANDOFF" : "BREAK";
         return banner(this, VIEW_W, VIEW_H, text, e.reason === "knockout" ? PAL.red : PAL.yellow, e.ms, e.summary.toUpperCase());
       }
