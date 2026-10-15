@@ -97,7 +97,8 @@ export function deskPage(run: Showrunner, notes: { file: string; text: string }[
     <h3>Request a character</h3><form method="post" action="/api/roster/request"><input name="request" placeholder="e.g. Moon Knight, or: Miles Morales from Earth-1610"><button>Draft a bible</button></form>
     <p class="muted small">The Archivist drafts a full bible and stats in the house format from canon. You read it on the Codex page, then approve or reject. Approved characters can be cast by the Showrunner from the next issue.</p></div>`;
   const memory = `<div class="card"><h2>Memory</h2><pre class="small" style="white-space:pre-wrap">${esc(run.memory.describe())}</pre></div>`;
-  return page("Editor's Desk", issue + death + stage + sim + notesHtml + roster + memory, NAV);
+  const changes = `<div class="card"><h2>Changing the game itself</h2><p class="small">Notes above go to the Bullpen, who play the story. Rules, maps, art, bugs and new systems go to Claude Code in a session on the repo (see <code>docs/WORKING-WITH-CLAUDE.md</code>). Before a big change, <a href="/api/backup" style="color:var(--blue)">download a backup of the world</a> (${run.world.events.length} events, issue #${run.story.loaded ? run.story.number : 0}).</p></div>`;
+  return page("Editor's Desk", issue + death + stage + sim + notesHtml + roster + memory + changes, NAV);
 }
 
 

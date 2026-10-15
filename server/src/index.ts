@@ -118,6 +118,23 @@ const server = http.createServer(async (req, res) => {
     res.end(JSON.stringify(list));
     return;
   }
+  if (url.pathname === "/api/backup") {
+    // the whole world as one JSON bundle: download it before a risky change, feed it to `npm run restore` or `npm run check:replay`
+    const files: Record<string, string> = {};
+    const walk = (dir: string, rel = "") => {
+      if (!fs.existsSync(dir)) return;
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        const p = path.join(dir, e.name), r = rel ? `${rel}/${e.name}` : e.name;
+        if (e.isDirectory()) walk(p, r); else files[r] = fs.readFileSync(p, "utf8");
+      }
+    };
+    walk(CONFIG.dataDir);
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+    res.setHeader("content-type", "application/json");
+    res.setHeader("content-disposition", `attachment; filename="marvel-world-${stamp}.json"`);
+    res.end(JSON.stringify({ kind: "marvel-8-bit-backup", takenAt: Date.now(), issue: run.story.loaded ? run.story.number : 0, events: run.world.events.length, files }));
+    return;
+  }
   if (url.pathname === "/api/chronicle") {
     res.setHeader("content-type", "text/plain; charset=utf-8");
     res.end(run.world.events.filter((e) => e.type !== "note").map((e) => run.world.describeEvent(e)).join("\n"));

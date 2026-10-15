@@ -9,6 +9,9 @@ Examples:
 - `more-daredevil.md`: "I'd like Daredevil to have a real moment with Spidey about Harry."
 - `tone.md`: "Fights are too short. Let them breathe."
 
-Roster requests ("add Moon Knight") land in Phase 3 with the Archivist; for now, write a
-bible + stats.json under `canon/characters/<slug>/` and add the id to `CAST` in
-`server/src/showrunner.ts`.
+Roster requests ("add Moon Knight") go in the box on the Editor's Desk (`/desk`): the
+Archivist drafts a bible and stats and you approve or reject. The Desk also has a notes form
+that writes to this folder, so you rarely need to touch it by hand.
+
+Anything about how the game *works* (rules, maps, art, bugs) is not a note for the Bullpen:
+see `docs/WORKING-WITH-CLAUDE.md`.

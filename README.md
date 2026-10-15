@@ -69,6 +69,13 @@ always plays something. Set `MOCK=1` to force it.
 - `npm run validate:canon` checks every character folder against the schema.
 - `npm run reset` wipes the event log and starts the issue fresh.
 
+## Changing things after it is live
+
+See `docs/WORKING-WITH-CLAUDE.md`: story nudges go to the Bullpen through the Desk; code,
+canon and art changes go through a Claude Code session on this repo (or a GitHub issue with
+the Change request template). `CLAUDE.md` briefs every new session. Back the world up at
+`/api/backup`; `npm run check:replay` proves a change loads an existing world.
+
 ## Where this lives, and what you need
 
 The code is in this GitHub repo on the branch `claude/ai-marvel-game-concept-u7pdj9`.
@@ -90,6 +97,9 @@ if you ever move computers.
 | `client/src/` | The 2D theater (Phaser 3, `/2d.html`) and the shared `look` data the rig reads |
 | `client/public/assets/` | Hand-drawn art drop zone and its `manifest.json` (see `docs/ART.md`) |
 | `docs/ART.md` | Art direction, the sprite sheet contract, and the three routes to real art |
+| `docs/WORKING-WITH-CLAUDE.md` | How to ask for changes once the game is live, and how the world stays safe |
+| `CLAUDE.md` | Briefing for Claude Code sessions: architecture, hard rules, checks before a push |
+| `scripts/` | `play.mjs` (the launcher), `restore.mjs` (restore a backup) |
 | `inbox/` | The Editor's Desk |
 | `data/` | Event log (`events.jsonl`), generated at runtime, git-ignored |
 
