@@ -108,9 +108,17 @@ export const BeatDeath = z.object({
   how: z.string().max(160),
 });
 
+/** Everyone listed travels to another location; the stage changes with them. Travel takes game time. */
+export const BeatTravel = z.object({
+  type: z.literal("travel"),
+  to: z.string().describe("map id from LOCATIONS"),
+  who: z.array(z.string()).min(1).describe("character ids who go; everyone else stays where they are and leaves the stage"),
+  how: z.string().max(100).optional().describe("one clause: 'by web-line across Midtown', 'in the Quinjet'"),
+});
+
 export const Beat = z.discriminatedUnion("type", [
   BeatCaption, BeatMove, BeatFace, BeatSay, BeatEmote, BeatWait, BeatStrike, BeatRescue, BeatFight,
-  BeatObjective, BeatEnter, BeatExit, BeatDeath,
+  BeatObjective, BeatEnter, BeatExit, BeatDeath, BeatTravel,
 ]);
 export type Beat = z.infer<typeof Beat>;
 
@@ -219,17 +227,36 @@ export const EvTitle = EventBase.extend({
   title: z.string(),
   subtitle: z.string().optional(),
 });
+export const Weather = z.enum(["clear", "rain", "fog", "snow", "storm"]);
+export type Weather = z.infer<typeof Weather>;
 export const EvScene = EventBase.extend({
   type: z.literal("scene"),
   location: z.string(),
   locationName: z.string(),
   timeOfDay: z.enum(["dawn", "day", "dusk", "night"]),
+  weather: Weather.default("clear"),
+  gameTime: z.string().optional(),
   caption: z.string().optional(),
+});
+export const EvTravel = EventBase.extend({
+  type: z.literal("travel"),
+  who: z.array(z.string()),
+  from: z.string(),
+  to: z.string(),
+  minutes: z.number().int(),
+  how: z.string().optional(),
+});
+/** "While you were away": off-panel events as one-liners, shown as a recap card. */
+export const EvRecap = EventBase.extend({
+  type: z.literal("recap"),
+  title: z.string(),
+  lines: z.array(z.string()),
 });
 export const EvSpawn = EventBase.extend({
   type: z.literal("spawn"),
   who: z.string(),
   name: z.string(),
+  location: z.string().optional(),
   at: MarkerId,
   x: z.number().int(),
   y: z.number().int(),
@@ -255,7 +282,7 @@ export const EvNote = EventBase.extend({
 export const GameEvent = z.discriminatedUnion("type", [
   EvCaption, EvMove, EvFace, EvSay, EvEmote, EvWait, EvRescue, EvStrike,
   EvFightStart, EvRound, EvFightEnd, EvInjury, EvHeal,
-  EvAct, EvObjective, EvIssueEnd, EvDeath,
+  EvAct, EvObjective, EvIssueEnd, EvDeath, EvTravel, EvRecap,
   EvTitle, EvScene, EvSpawn, EvDespawn, EvNote,
 ]);
 export type GameEvent = z.infer<typeof GameEvent>;

@@ -10,7 +10,7 @@ import { listCharacterIds, loadCharacter, readInbox, loadWorldDoc } from "../can
 import { IssuePlan } from "../story.js";
 import type { Memory } from "../memory.js";
 import type { World } from "../world.js";
-import type { MapDef } from "../../../shared/maps.js";
+import { MAPS, type MapDef } from "../../../shared/maps.js";
 
 const ROLE = `You are the SHOWRUNNER in the Bullpen of a private, AI-played Marvel game. You plan the next ISSUE: a three-act story that the Scene Director will stage beat by beat and the Tactician will fight round by round. You do not write dialogue. You design structure, stakes, and the one image each act is built around.
 
@@ -24,7 +24,7 @@ WHAT MAKES A GOOD ISSUE HERE
 - Deaths: only if the story has truly earned it, never casually, and know it will be held for the Editor's approval. Most issues have none.
 - Every issue leaves one or two hooks for later. Give it a title that would look right on a cover.
 
-LOCATION: only one map exists today (chelsea-rooftop). Stage everything there; arrivals land at its markers.
+LOCATIONS: choose where the issue opens and, optionally, where an act moves to (travel takes game time: minutes across Manhattan, hours to Latveria). A change of location mid-issue is a strong tool; use it when the story needs it, not every issue. Villains with a scheme meter over 80 must be addressed soon.
 
 OUTPUT: a single JSON object matching the schema.`;
 
@@ -39,7 +39,7 @@ export class Showrunner {
     }).join("\n");
   }
 
-  async plan(world: World, memory: Memory, map: MapDef, nextNumber: number): Promise<IssuePlan> {
+  async plan(world: World, memory: Memory, map: MapDef, nextNumber: number, simText = ""): Promise<IssuePlan> {
     const notes = readInbox();
     const rules = loadWorldDoc("rules.md");
     const onStage = [...world.actors.values()].map((a) => `${a.name} (${a.id}): HP ${a.hp}/${a.maxHp}${a.injuries.length ? ", injuries: " + a.injuries.map((i) => i.name).join(", ") : ""}`).join("\n") || "(empty stage)";
@@ -49,7 +49,7 @@ export class Showrunner {
       system: [
         { type: "text", text: ROLE },
         { type: "text", text: `HOUSE RULES (death policy, knowledge model, off-panel limits):\n\n${rules.slice(0, 20000)}`, cache_control: { type: "ephemeral", ttl: "1h" } },
-        { type: "text", text: `ROSTER:\n${this.roster()}\n\nMAP ${map.id} MARKERS: ${map.markers.map((m) => `${m.id} (${m.desc})`).join("; ")}` },
+        { type: "text", text: `ROSTER:\n${this.roster()}\n\nLOCATIONS:\n${Object.values(MAPS).map((m) => `- ${m.id}: ${m.name} (${m.kind}, ${m.region}${m.publicSpace ? ", public" : ""}). ${m.flavor} Markers: ${m.markers.map((k) => k.id).join(", ")}`).join("\n")}` },
       ],
       messages: [{
         role: "user",
@@ -63,6 +63,9 @@ ${memory.describeIssues()}
 
 MEMORY:
 ${memory.describe()}
+
+WORLD SIM:
+${simText}
 
 ${notes.length ? `EDITOR'S NOTES:\n${notes.map((n) => "- " + n.replace(/\n+/g, " ")).join("\n")}` : "EDITOR'S NOTES: (none)"}
 
@@ -80,7 +83,7 @@ Use character ids exactly as listed in the roster. Opening cast must be on the m
 
 /** Issue #1 as a plan, and a rotating generic plan for later issues when running without credentials. */
 export class MockShowrunner {
-  plan(world: World, _memory: Memory, _map: MapDef, nextNumber: number): IssuePlan {
+  plan(world: World, _memory: Memory, _map: MapDef, nextNumber: number, _simText = ""): IssuePlan {
     const ids = listCharacterIds();
     const villains = ids.filter((id) => loadCharacter(id)!.stats.role === "villain");
     const heroes = ids.filter((id) => loadCharacter(id)!.stats.role === "hero");
@@ -89,14 +92,18 @@ export class MockShowrunner {
     const h1 = heroes[(nextNumber - 1) % heroes.length]!, h2 = heroes[(nextNumber + 2) % heroes.length]!;
     const vn = loadCharacter(v)!.stats.name, h1n = loadCharacter(h1)!.stats.name, h2n = loadCharacter(h2)!.stats.name;
     void world;
+    const locs = ["midtown-street", "chelsea-rooftop", "avengers-lounge", "castle-doom"];
+    const loc = v === "doctor-doom" ? "castle-doom" : locs[(nextNumber - 1) % 2]!;
+    const m = MAPS[loc]!;
+    const act3Loc = loc === "castle-doom" ? undefined : "avengers-lounge";
     return {
       title: `${vn} Rising`, subtitle: `${h1n} alone. ${h2n} late. ${vn} ready.`,
-      premise: `${vn} has come to the Chelsea rooftop with a plan and a grudge. ${h1n} is the only one there to stop it; ${h2n} is on the way.`,
-      antagonist: v, cast: [h1, h2, v], opening: [{ who: h1, at: "water-tower" }, { who: v, at: "ledge-north" }], opensAfterGameHours: 6,
+      premise: `${vn} has come to ${m.name} with a plan and a grudge. ${h1n} is the only one there to stop it; ${h2n} is on the way.`,
+      antagonist: v, location: loc, cast: [h1, h2, v], opening: [{ who: h1, at: m.entry[0]! }, { who: v, at: m.markers[0]!.id }], opensAfterGameHours: 6,
       acts: [
-        { title: "Arrival", goal: `${vn} states the terms; ${h1n} refuses.`, objectives: [{ id: "learn-terms", text: `${h1n} learns what ${vn} wants` }], setPiece: `${vn} on the parapet, lit from below`, arrivals: [] },
-        { title: "Reinforcements", goal: `${h2n} arrives; the fight turns.`, objectives: [{ id: "ally-arrives", text: `${h2n} enters the fight` }, { id: "first-blood", text: `someone lands a serious hit` }], setPiece: "two heroes, one villain, a cracked skylight", arrivals: [{ who: h2, at: "ledge-east", cue: `when ${h1n} is in trouble` }] },
-        { title: "The Cost", goal: `${vn} gets part of what they came for and leaves; the heroes count the cost.`, objectives: [{ id: "villain-exits", text: `${vn} leaves the rooftop, defeated or satisfied` }], setPiece: "the rooftop after, dawn coming", arrivals: [] },
+        { title: "Arrival", goal: `${vn} states the terms; ${h1n} refuses.`, objectives: [{ id: "learn-terms", text: `${h1n} learns what ${vn} wants` }], setPiece: `${vn} at ${m.markers[0]!.desc}`, arrivals: [] },
+        { title: "Reinforcements", goal: `${h2n} arrives; the fight turns.`, objectives: [{ id: "ally-arrives", text: `${h2n} enters the fight` }, { id: "first-blood", text: `someone lands a serious hit` }], setPiece: "two heroes, one villain", arrivals: [{ who: h2, at: m.entry[1] ?? m.entry[0]!, cue: `when ${h1n} is in trouble` }] },
+        { title: "The Cost", location: act3Loc, goal: `${vn} gets part of what they came for and leaves; the heroes count the cost.`, objectives: [{ id: "villain-exits", text: `${vn} leaves, defeated or satisfied` }], setPiece: "the aftermath, dawn coming", arrivals: [] },
       ],
       nextHooks: [`${vn} got something tonight; what was it?`],
     };
@@ -108,6 +115,7 @@ export const ISSUE_ONE_PLAN: IssuePlan = {
   subtitle: "A Chelsea rooftop. Three web cartridges. One old enemy.",
   premise: "Spider-Man is decompressing on his water-tower rooftop after a long night when the Green Goblin arrives, not to fight at first, but to talk: Norman has learned something about Harry he wants Peter to hear, and he enjoys the leverage. It goes bad the way it always does. Daredevil, patrolling two blocks over, hears the fight.",
   antagonist: "green-goblin",
+  location: "chelsea-rooftop",
   cast: ["spider-man", "green-goblin", "daredevil"],
   opening: [{ who: "spider-man", at: "water-tower" }, { who: "green-goblin", at: "ledge-north" }],
   opensAfterGameHours: 0,

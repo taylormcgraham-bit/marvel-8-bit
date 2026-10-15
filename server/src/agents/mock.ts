@@ -9,7 +9,7 @@ export class MockDirector {
   private i = 0;
 
   next(world: World): SceneChunk {
-    const ids = [...world.actors.keys()];
+    const ids = world.stage().map((a) => a.id);
     const hero = ids.find((id) => world.actors.get(id)!.character.stats.role === "hero") ?? ids[0]!;
     const villainId = ids.find((id) => world.actors.get(id)!.character.stats.role === "villain");
     const villain = villainId ?? ids[1] ?? hero;
@@ -21,8 +21,8 @@ export class MockDirector {
       {
         sceneNote: "Opening: quiet before the storm.",
         beats: [
-          { type: "caption", text: "CHELSEA. 11:48 PM." },
-          { type: "move", who: hero, to: "ledge-south" },
+          { type: "caption", text: `${world.map.name.toUpperCase()}. ${world.clock.label.split(",")[0]!.toUpperCase()}.` },
+          { type: "move", who: hero, to: world.map.markers[Math.min(4, world.map.markers.length - 1)]!.id },
           { type: "face", who: hero, dir: "down" },
           { type: "say", who: hero, text: "Three cartridges. One slice of pizza. Zero sleep. Classic Parker night.", mood: "quip" },
           { type: "emote", who: hero, emote: "..." },
@@ -34,7 +34,7 @@ export class MockDirector {
         beats: [
           { type: "emote", who: hero, emote: "!" },
           { type: "say", who: hero, text: "Spider-sense. Great. Who orders a villain at midnight?", mood: "worried" },
-          { type: "move", who: villain, to: "ledge-north" },
+          { type: "move", who: villain, to: world.map.markers[1]!.id },
           { type: "say", who: villain, text: "You keep such predictable haunts, Spider-Man.", mood: "smug" },
           { type: "face", who: hero, dir: "up" },
           { type: "say", who: hero, text: "And you keep such predictable monologues. Get to the part where you lose.", mood: "quip" },
@@ -44,7 +44,7 @@ export class MockDirector {
         sceneNote: "First exchange.",
         beats: [
           { type: "move", who: villain, to: "center" },
-          { type: "move", who: hero, to: "skylight" },
+          { type: "move", who: hero, to: world.map.markers[6 % world.map.markers.length]!.id },
           { type: "strike", who: villain, target: hero, move: firstAttack(villain), intent: "test his reflexes" },
           { type: "emote", who: hero, emote: "sweat" },
           { type: "strike", who: hero, target: villain, move: firstAttack(hero), intent: "keep him off the ledge" },
@@ -62,7 +62,7 @@ export class MockDirector {
       } : {
         sceneNote: "Quiet after the storm.",
         beats: [
-          { type: "move", who: hero, to: "water-tower" },
+          { type: "move", who: hero, to: world.map.markers[0]!.id },
           { type: "emote", who: hero, emote: "..." },
           { type: "say", who: hero, text: "He'll be back. He's always back.", mood: "worried" },
           { type: "wait", ms: 1200 },
@@ -73,16 +73,16 @@ export class MockDirector {
         beats: third
           ? [
               { type: "caption", text: "MEANWHILE, ON THE FIRE ESCAPE..." },
-              { type: "move", who: third, to: "ledge-east" },
+              { type: "move", who: third, to: world.map.entry[0]! },
               { type: "say", who: third, text: "Heard the heartbeat from two blocks away. Need a hand?", mood: "neutral" },
               { type: "say", who: hero, text: "Took you long enough. Did you stop for a hot dog?", mood: "quip" },
               { type: "face", who: villain, dir: "right" },
               { type: "say", who: villain, text: "Two of you. How tiresome.", mood: "smug" },
             ]
           : [
-              { type: "move", who: hero, to: "ac-unit" },
+              { type: "move", who: hero, to: world.map.markers[7 % world.map.markers.length]!.id },
               { type: "say", who: hero, text: "Okay. Breathe. Think.", mood: "whisper" },
-              { type: "move", who: villain, to: "vent" },
+              { type: "move", who: villain, to: world.map.markers[8 % world.map.markers.length]!.id },
               { type: "say", who: villain, text: "Hiding? From me?", mood: "smug" },
             ],
       },

@@ -19,6 +19,9 @@ import { Engine, type Rejection } from "./engine.js";
 import { World } from "./world.js";
 import { Story, type IssuePlan } from "./story.js";
 import { Memory } from "./memory.js";
+import { Sim } from "./sim.js";
+import { CatchUp, MockCatchUp } from "./agents/catchup.js";
+import { MAPS } from "../../shared/maps.js";
 import { describeDuration } from "./clock.js";
 
 type Listener = (events: GameEvent[]) => void;
@@ -31,12 +34,15 @@ export class Showrunner {
   readonly engine = new Engine(this.world);
   readonly story = new Story();
   readonly memory = new Memory();
+  readonly sim = new Sim();
   mode: "live" | "mock" = "mock";
   private director?: Director;
   private continuity?: ContinuityEditor;
   private tactician?: Tactician;
   private planner?: ShowrunnerAgent;
   private archivist?: Archivist;
+  private catchup?: CatchUp;
+  private mockCatchup = new MockCatchUp();
   private mock = new MockDirector();
   private mockTactician = new MockTactician();
   private mockPlanner = new MockShowrunner();
@@ -58,10 +64,12 @@ export class Showrunner {
       this.tactician = new Tactician();
       this.planner = new ShowrunnerAgent();
       this.archivist = new Archivist();
+      this.catchup = new CatchUp();
       if (CONFIG.continuityMode === "llm") this.continuity = new ContinuityEditor();
     }
     this.engine.story = this.story;
     this.memory.load();
+    this.sim.load();
     const replayed = this.world.replay();
     const hadStory = this.story.load();
     if (replayed > 0 && hadStory && !this.story.finished) {
@@ -71,6 +79,9 @@ export class Showrunner {
       this.log(replayed > 0 ? "log present but no issue in progress; starting fresh issue" : "fresh world");
     }
     this.lastHealGameMs = this.world.clock.gameMs;
+    this.sim.init(this.world.clock.gameMs);
+    this.world.weather = this.sim.weather;
+    this.sim.save();
   }
 
   private log(s: string) {
@@ -92,14 +103,14 @@ export class Showrunner {
   private async planIssue(number: number): Promise<IssuePlan> {
     if (this.mode === "live" && this.planner) {
       try {
-        const plan = await this.planner.plan(this.world, this.memory, this.world.map, number);
+        const plan = await this.planner.plan(this.world, this.memory, this.world.map, number, this.sim.describe());
         this.log(`showrunner planned issue #${number} "${plan.title}" (cast: ${plan.cast.join(", ")})`);
         return plan;
       } catch (err) {
         this.log(`showrunner error: ${(err as Error).message}; using scripted plan`);
       }
     }
-    return this.mockPlanner.plan(this.world, this.memory, this.world.map, number);
+    return this.mockPlanner.plan(this.world, this.memory, this.world.map, number, this.sim.describe());
   }
 
   /** Open an issue: cast changes, title card, scene, act 1. */
@@ -109,15 +120,21 @@ export class Showrunner {
     this.world.issue.sceneNote = "";
     const evs: GameEvent[] = [];
     const opening = new Set(plan.opening.map((o) => o.who));
-    for (const a of [...this.world.actors.values()]) if (!opening.has(a.id)) evs.push(this.engine.despawn(a.id, "between issues"));
+    // everyone not in the opening goes home between issues
+    for (const a of [...this.world.actors.values()]) if (!opening.has(a.id)) { this.sim.whereabouts[a.id] = this.sim.whereabouts[a.id] ?? a.location; evs.push(this.engine.despawn(a.id, "between issues")); }
+    if (MAPS[plan.location]) this.world.setLocation(plan.location); else this.log(`unknown issue location "${plan.location}", staying at ${this.world.map.id}`);
+    this.world.weather = this.sim.weather;
     evs.push(this.engine.title(number, plan.title, plan.subtitle));
-    evs.push(this.engine.scene(`${this.world.clock.label.toUpperCase()}`));
+    evs.push(this.engine.scene(`${this.world.map.name.toUpperCase()}. ${this.world.clock.label.toUpperCase()}`));
     for (const o of plan.opening) {
-      if (this.world.actors.has(o.who)) continue;
+      const existing = this.world.actors.get(o.who);
+      if (existing) { existing.location = this.world.map.id; const m = this.world.marker(o.at); if (m) { existing.x = m.x; existing.y = m.y; } continue; }
       const c = loadCharacter(o.who);
       if (!c) { this.log(`opening cast "${o.who}" has no canon folder; skipping`); continue; }
       evs.push(this.engine.spawn(c, this.world.marker(o.at) ? o.at : "center"));
     }
+    for (const id of opening) this.sim.whereabouts[id] = this.world.map.id;
+    evs.push(...this.engine.stageSpawns().filter((e) => e.type === "spawn" && !evs.some((x) => x.type === "spawn" && x.who === e.who)));
     evs.push(this.engine.act(number, 1, plan.acts[0]!.title, plan.acts[0]!.goal, this.story.actObjectives));
     this.emit(evs);
     this.bufferMs += evs.reduce((s, e) => s + e.ms, 0);
@@ -144,6 +161,8 @@ export class Showrunner {
       number: n, title: this.story.plan.title, subtitle: this.story.plan.subtitle, summary: summary.summary, keyEvents: summary.keyEvents,
       threads: summary.threads, cast: this.story.plan.cast, endedAt: Date.now(),
     }, this.world.currentIssueEvents(n).filter((e) => e.seq > 0 && e.type !== "note").map((e) => this.world.describeEvent(e)));
+    this.sim.closeIssue(this.story.plan.antagonist);
+    this.sim.save();
     this.log(`issue #${n} closed and archived`);
 
     const next = await this.planIssue(n + 1);
@@ -173,6 +192,9 @@ export class Showrunner {
     const ev = this.engine.act(this.story.number, this.story.actIndex + 1, act.title, act.goal, this.story.actObjectives);
     this.emit([ev]); this.bufferMs += ev.ms;
     this.log(`act ${this.story.actIndex + 1} "${act.title}" (${reason})`);
+    if (act.location && act.location !== this.world.map.id && MAPS[act.location]) {
+      this.doTravel(this.world.stage().map((a) => a.id), act.location, "as the act opens");
+    }
   }
 
   /* ------------------------------------------------------------------ viewers */
@@ -194,11 +216,8 @@ export class Showrunner {
     if (this.viewers === 1) {
       const { awayMs, passedMs } = this.world.clock.resume();
       if (passedMs > 0) {
-        this.emitNote("info", `away ${describeDuration(awayMs)}; ${describeDuration(passedMs)} of game time passed. It is now ${this.world.clock.label}.`);
-        this.emit([this.engine.scene(`${describeDuration(passedMs).toUpperCase()} LATER...`)]);
-        const healed = this.engine.healOverTime(passedMs, "catch-up");
-        if (healed.length) this.emit(healed);
-        this.lastHealGameMs = this.world.clock.gameMs;
+        this.log(`away ${describeDuration(awayMs)}; ${describeDuration(passedMs)} of game time passed. It is now ${this.world.clock.label}.`);
+        void this.catchUp(passedMs);
       } else if (awayMs > 60_000) {
         this.log(`viewer back after ${describeDuration(awayMs)}; within grace, no game time passed (${this.world.clock.label})`);
       }
@@ -210,6 +229,53 @@ export class Showrunner {
     if (this.viewers === 0) this.world.clock.pause();
   }
   reportBuffer(ms: number) { this.bufferMs = ms; this.kick(); }
+
+  /** Off-Panel Catch-Up: heal, run the sim, write the "while you were away" card, resume the scene. */
+  private async catchUp(passedMs: number) {
+    this.generating = true;
+    try {
+      const healed = this.engine.healOverTime(passedMs, "catch-up");
+      this.lastHealGameMs = this.world.clock.gameMs;
+      const simNotes = this.runSim();
+      let lines: string[];
+      try {
+        lines = this.mode === "live" && this.catchup && this.story.loaded
+          ? await this.catchup.write(this.world, this.sim, this.story, passedMs, simNotes)
+          : this.mockCatchup.write(this.world, this.sim, this.story, passedMs, simNotes);
+      } catch (err) { this.log(`catch-up error: ${(err as Error).message}`); lines = this.mockCatchup.write(this.world, this.sim, this.story, passedMs, simNotes); }
+      this.world.weather = this.sim.weather;
+      const evs: GameEvent[] = [this.engine.recap(`WHILE YOU WERE AWAY: ${describeDuration(passedMs).toUpperCase()}`, lines), ...healed, this.engine.scene(`${this.world.map.name.toUpperCase()}. ${this.world.clock.label.toUpperCase()}`), ...this.engine.stageSpawns()];
+      this.emit(evs); this.bufferMs += evs.reduce((s, e) => s + e.ms, 0);
+    } finally { this.generating = false; }
+  }
+
+  /** Move characters to another map: travel event, clock advance, healing, new scene, stage spawns. */
+  private doTravel(who: string[], to: string, how?: string): string | null {
+    const r = this.engine.travel(who, to, how);
+    if (typeof r === "string") return r;
+    const evs: GameEvent[] = [...r];
+    const tr = r[0]; const minutes = tr && tr.type === "travel" ? tr.minutes : 0;
+    if (minutes > 0) {
+      this.world.clock.gameMs += minutes * 60_000; this.world.clock.save();
+      evs.push(...this.engine.healOverTime(minutes * 60_000, "time"));
+      this.lastHealGameMs = this.world.clock.gameMs;
+    }
+    this.runSim();
+    this.world.weather = this.sim.weather;
+    evs.push(this.engine.scene(`${this.world.map.name.toUpperCase()}${minutes ? `. ${minutes} MINUTES LATER` : ""}`));
+    evs.push(...this.engine.stageSpawns());
+    for (const id of who) this.sim.whereabouts[id] = to;
+    this.emit(evs); this.bufferMs += evs.reduce((s, e) => s + e.ms, 0);
+    this.log(`travel: ${who.join(", ")} to ${to} (${minutes} min)`);
+    return null;
+  }
+
+  /** Advance the deterministic sim to the current game time. Returns its notes. */
+  private runSim(): string[] {
+    const notes = this.sim.advance(this.world.clock.gameMs, new Set(this.world.stage().map((a) => a.id)));
+    this.sim.save();
+    return notes;
+  }
 
   /** Editor's Desk actions. */
   decideDeath(status: "approved" | "vetoed") {
@@ -226,6 +292,9 @@ export class Showrunner {
           const healed = this.engine.healOverTime(dt, "time");
           if (healed.length) this.emit(healed);
           this.lastHealGameMs = this.world.clock.gameMs;
+          const notes = this.runSim();
+          if (this.sim.weather !== this.world.weather) { this.world.weather = this.sim.weather; this.emit([this.engine.scene(undefined, this.sim.weather)]); }
+          for (const n of notes) this.log(`sim: ${n}`);
         }
       }
       this.kick();
@@ -252,7 +321,7 @@ export class Showrunner {
       let chunk: SceneChunk;
       if (this.mode === "live" && this.director) {
         try {
-          const r = await this.director.next({ world: this.world, rejections: this.lastRejections, story: this.story, memory: this.memory });
+          const r = await this.director.next({ world: this.world, rejections: this.lastRejections, story: this.story, memory: this.memory, sim: this.sim });
           chunk = r.chunk;
           this.log(`director(${r.model}) ${r.chunk.beats.length} beats; tokens in=${r.usage.in} out=${r.usage.out} cacheRead=${r.usage.cacheRead} cacheWrite=${r.usage.cacheWrite}`);
         } catch (err) {
@@ -289,12 +358,20 @@ export class Showrunner {
           this.world.clock.sceneLocked = true;
           const r = await runFight(beat, {
             world: this.world, engine: this.engine, tactician: this.mode === "live" && this.tactician ? this.tactician : this.mockTactician,
-            emit: (evs) => { this.emit(evs); this.bufferMs += evs.reduce((s, e) => s + e.ms, 0); played += evs.length; },
+            emit: (evs) => {
+              for (const e of evs) for (const n of this.sim.react(e, this.world.stage().map((a) => a.id), this.world.map.id, (id) => loadCharacter(id)?.stats.role ?? "supporting")) this.log(`sim: ${n}`);
+              this.emit(evs); this.bufferMs += evs.reduce((s, e) => s + e.ms, 0); played += evs.length;
+            },
             log: (t) => this.log(t),
           });
           this.world.clock.sceneLocked = false;
           this.lastHealGameMs = this.world.clock.gameMs;
           this.log(`fight: ${r.rounds} rounds, ${r.reason}`);
+          continue;
+        }
+        if (beat.type === "travel") {
+          const err = this.doTravel(beat.who, beat.to, beat.how);
+          if (err) rejections.push({ beat, reason: err });
           continue;
         }
         const r = this.engine.resolveOne(beat);
@@ -304,6 +381,7 @@ export class Showrunner {
         if (r.type === "death") this.memory.record({ who: r.who, kind: "death", issue: r.issue, how: r.how }), this.memory.save();
         const evs: GameEvent[] = [r];
         if (r.type === "strike") { const inj = this.engine.injuryAfter(r); if (inj) evs.push(inj); }
+        for (const n of this.sim.react(r, this.world.stage().map((a) => a.id), this.world.map.id, (id) => loadCharacter(id)?.stats.role ?? "supporting")) this.log(`sim: ${n}`);
         this.emit(evs);
         this.bufferMs += evs.reduce((s, e) => s + e.ms, 0);
         played += evs.length;

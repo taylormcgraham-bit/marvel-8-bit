@@ -245,7 +245,7 @@ boss arena).
 | **1. Theater** ✅ | One district, three characters, Scene Director + Continuity Editor only. Move / say / emote beats render in Phaser. | You can watch Spidey and Goblin banter on a rooftop for 20 minutes without it breaking. |
 | **2. Game** ✅ | Combat Engine, Tactician, stats, HP, injuries, on-map fights, HUD. | A fight looks and feels like a game, outcomes persist. |
 | **3. Story** ✅ | Showrunner, arcs as issues, quest log, title cards, Chronicle, Editor's Desk. | A full 3-act issue plays start to finish and your notes shape the next one. |
-| **4. World** | More districts and realms, World Sim (clock, weather, schedules, scheme meters), factions, Off-Panel Catch-Up and recaps. | You can close it for a day and come back to a living world. |
+| **4. World** ✅ | More districts and realms, World Sim (clock, weather, schedules, scheme meters), factions, Off-Panel Catch-Up and recaps. | You can close it for a day and come back to a living world. |
 | **5. Polish** | Codex, cinematic camera, chiptune score, portraits, roster-request pipeline. | It feels like a PS5 game wearing an NES costume. |
 
 ---
@@ -316,6 +316,28 @@ boss arena).
   transcript; `/desk` shows the current act and objectives, lets you add and remove notes,
   approve or veto a planned death, and see stage condition, roster and memory.
 - **Theater**: quest log (Q), act banners, objective toasts, end-of-issue cards.
+
+### Phase 4 notes (World)
+
+- **Four maps** in `shared/maps.ts`: Chelsea rooftop, Midtown outside the Daily Bugle
+  (public), the Avengers Tower lounge (interior), and Castle Doom's courtyard (Latveria).
+  Each has markers, props drawn by kind, entry markers for arrivals, and a flag for public
+  space. `travelMinutes` encodes the rules table (minutes across Manhattan, hours by
+  Quinjet, moments by Bifrost).
+- **Travel**: a `travel` beat, or an act with a `location`, moves the listed characters,
+  advances the clock, heals for the time, runs the Sim, and rebuilds the stage. Characters
+  left behind stay where they are ("ELSEWHERE" in the Director's prompt; `enter` brings
+  them back).
+- **World Sim** (`server/src/sim.ts`, no AI): villain scheme meters rise 1.5%/game-hour
+  off-panel, capped at 90% until addressed on-panel; faction standings start from each
+  hero's `stats.json`, move on rescues, public fights, knockouts and escapes, and decay
+  one point per game-day toward canon; weather is a deterministic function of the clock;
+  whereabouts tracks everyone off stage. The Showrunner and Director see all of it.
+- **Off-Panel Catch-Up**: on return after time away, healing and the Sim run, and a
+  "while you were away" card lists two to six one-liners from the allowed list (the
+  catch-up agent in live mode, mechanical lines otherwise). Then the scene resumes.
+- **Theater**: skies by time of day, mountains for Latveria, interiors without sky,
+  torch and lamp light, rain, snow, fog and storm effects, fades on travel.
 
 ## 13. Open questions
 

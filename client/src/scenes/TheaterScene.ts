@@ -8,8 +8,9 @@ import { MAPS, type MapDef } from "@shared/maps";
 import { Net } from "../net";
 import { VIEW_W, VIEW_H } from "../main";
 import {
-  TILE, CHAR_W, CHAR_H, PAL, FRAME_INDEX, makeTiles, makeSky, makeObjects, makeCharacter, makePortrait, makeEmotes, makeFx, type Look,
+  TILE, CHAR_W, CHAR_H, PAL, FRAME_INDEX, makeTiles, makeTiles2, makeProps, makeSky, makeSkies, makeObjects, makeCharacter, makePortrait, makeEmotes, makeFx, type Look,
 } from "../render/pixels";
+import { windowBox } from "../ui/widgets";
 import { DialogBox, CaptionBox, TitleCard, HpBar, QuestLog, FONT, floatText, banner } from "../ui/widgets";
 
 interface Manifest {
@@ -50,6 +51,10 @@ export class TheaterScene extends Phaser.Scene {
   private hud!: Phaser.GameObjects.Text;
   private scanlines!: Phaser.GameObjects.Image;
   private quest!: QuestLog;
+  private stageObjects: Phaser.GameObjects.GameObject[] = [];
+  private weatherObjects: Phaser.GameObjects.GameObject[] = [];
+  private timeOfDay = "night";
+  private weather = "clear";
   private objectives: { id: string; text: string; status: string }[] = [];
   private actInfo = { issue: 0, n: 0, title: "" };
   private consoleEl = document.getElementById("console") as HTMLPreElement;
@@ -74,11 +79,9 @@ export class TheaterScene extends Phaser.Scene {
 
   create() {
     const keep = new Set(Object.keys((this.cache.json.get("manifest") as Manifest | undefined)?.textures ?? {}));
-    makeTiles(this, keep); makeSky(this, VIEW_W); makeObjects(this, keep); makeEmotes(this); makeFx(this);
+    makeTiles(this, keep); makeTiles2(this); makeSky(this, VIEW_W); makeSkies(this, VIEW_W); makeObjects(this, keep); makeProps(this); makeEmotes(this); makeFx(this);
     this.map = MAPS["chelsea-rooftop"]!;
-    this.drawSky();
-    this.drawMap();
-    this.drawLighting();
+    this.buildStage();
     this.dialog = new DialogBox(this, VIEW_W, VIEW_H);
     this.caption = new CaptionBox(this, VIEW_W);
     this.title = new TitleCard(this, VIEW_W, VIEW_H);
@@ -91,11 +94,16 @@ export class TheaterScene extends Phaser.Scene {
     this.input.keyboard?.on("keydown-C", () => this.scanlines.setVisible(!this.scanlines.visible));
 
     if (location.search.includes("showcase")) {
-      // art review: spawn the whole roster, no story
+      // art review: spawn the whole roster, no story. ?map=<id>&tod=<dawn|day|dusk|night>&weather=<...>
+      const q = new URLSearchParams(location.search);
+      if (q.get("map") && MAPS[q.get("map")!]) this.map = MAPS[q.get("map")!]!;
+      this.timeOfDay = q.get("tod") ?? "night"; this.weather = q.get("weather") ?? "clear";
+      this.buildStage();
       this.badgeEl.textContent = "SHOWCASE  ·  C scanlines";
       fetch("/api/roster").then((r) => r.json()).then((list: GameEvent[]) => {
-        this.hud.setText("ROSTER SHOWCASE");
-        this.enqueue(list);
+        this.hud.setText(`${this.map.name.toUpperCase()}  ·  ${this.timeOfDay.toUpperCase()}`);
+        const markers = this.map.markers;
+        this.enqueue(list.map((e, i) => e.type === "spawn" ? { ...e, x: markers[i % markers.length]!.x, y: markers[i % markers.length]!.y } : e));
       });
       return;
     }
@@ -127,55 +135,108 @@ export class TheaterScene extends Phaser.Scene {
 
   /* ------------------------------------------------------------------ stage */
 
-  private drawSky() {
-    this.add.image(0, 0, "sky").setOrigin(0).setDepth(-10);
-    const far = this.add.image(0, 0, "skyline-far").setOrigin(0).setDepth(-9);
-    this.tweens.add({ targets: far, x: -3, duration: 60000, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
-    for (let i = 0; i < 3; i++) {
-      const c = this.add.image(-70 + i * 140, 4 + i * 7, "cloud").setOrigin(0).setDepth(-8);
-      this.tweens.add({ targets: c, x: VIEW_W + 20, duration: 90000 + i * 25000, repeat: -1, delay: i * 8000, onRepeat: () => c.setX(-70) });
-    }
-    this.add.image(0, 0, "skyline-near").setOrigin(0).setDepth(-7);
-    const blink = this.add.image(0, 0, "skyline-blink").setOrigin(0).setDepth(-6).setAlpha(0.2);
-    this.tweens.add({ targets: blink, alpha: 1, duration: 1800, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
-    const beacon = this.add.rectangle(VIEW_W - 53, 1, 2, 2, 0xff3030).setOrigin(0).setDepth(-5);
-    this.tweens.add({ targets: beacon, alpha: 0.1, duration: 700, yoyo: true, repeat: -1 });
+  private clearStage() {
+    for (const o of this.stageObjects) o.destroy();
+    this.stageObjects = [];
+    this.clearWeather();
   }
+  private keep<T extends Phaser.GameObjects.GameObject>(o: T): T { this.stageObjects.push(o); return o; }
 
-  private drawMap() {
-    const layer = this.add.container(0, 0).setDepth(0);
-    for (let y = 0; y < this.map.height; y++) for (let x = 0; x < this.map.width; x++) {
-      const t = this.map.tiles[y]![x]!;
+  /** Build background, tiles, props and lighting for the current map, time of day and weather. */
+  private buildStage() {
+    this.clearStage();
+    const m = this.map;
+    const tod = this.timeOfDay;
+    const night = tod === "night";
+    if (m.kind !== "interior") {
+      this.keep(this.add.image(0, 0, `sky-${tod}`).setOrigin(0).setDepth(-10));
+      if (m.region === "latveria") this.keep(this.add.image(0, 0, "mountains").setOrigin(0).setDepth(-7));
+      else if (m.kind === "rooftop") {
+        const far = this.keep(this.add.image(0, 0, "skyline-far").setOrigin(0).setDepth(-9));
+        this.tweens.add({ targets: far, x: -3, duration: 60000, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+        for (let i = 0; i < 3; i++) {
+          const c = this.keep(this.add.image(-70 + i * 140, 4 + i * 7, "cloud").setOrigin(0).setDepth(-8));
+          this.tweens.add({ targets: c, x: VIEW_W + 20, duration: 90000 + i * 25000, repeat: -1, delay: i * 8000, onRepeat: () => c.setX(-70) });
+        }
+        this.keep(this.add.image(0, 0, "skyline-near").setOrigin(0).setDepth(-7));
+        if (night) {
+          const blink = this.keep(this.add.image(0, 0, "skyline-blink").setOrigin(0).setDepth(-6).setAlpha(0.2));
+          this.tweens.add({ targets: blink, alpha: 1, duration: 1800, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+          const beacon = this.keep(this.add.rectangle(VIEW_W - 53, 1, 2, 2, 0xff3030).setOrigin(0).setDepth(-5));
+          this.tweens.add({ targets: beacon, alpha: 0.1, duration: 700, yoyo: true, repeat: -1 });
+        }
+      }
+    }
+    // tiles
+    for (let y = 0; y < m.height; y++) for (let x = 0; x < m.width; x++) {
+      const t = m.tiles[y]![x]!;
       if (t === "void") continue;
-      layer.add(this.add.image(x * TILE, y * TILE, `tile-${t}`).setOrigin(0));
+      this.keep(this.add.image(x * TILE, y * TILE, `tile-${t}`).setOrigin(0).setDepth(0));
     }
-    // 2.5D: the north parapet shows its front face, then a soft shadow on the gravel
-    for (let x = 0; x < this.map.width; x++) layer.add(this.add.image(x * TILE, 3 * TILE, "ledge-front").setOrigin(0));
-    for (let x = 1; x < this.map.width - 1; x++) layer.add(this.add.image(x * TILE, 3 * TILE + 7, "ao-strip").setOrigin(0));
-    for (let y = 3; y < this.map.height - 1; y++) layer.add(this.add.image(1 * TILE, y * TILE, "ao-strip").setOrigin(0).setAngle(-90).setOrigin(1, 0));
-    // objects with shadows, in the actor depth space so people walk behind them
-    const towerX = 14 * TILE - 2, towerBaseY = 5 * TILE;
-    this.add.image(towerX + 26, towerBaseY + 2, "shadow-blob").setDisplaySize(60, 16).setAlpha(0.8).setDepth(1);
-    this.add.image(towerX, towerBaseY - 64 + 6, "water-tower").setOrigin(0).setDepth(towerBaseY - 4);
-    const doorX = 2 * TILE - 2, doorY = 13 * TILE;
-    this.add.image(doorX + 18, doorY - 2, "shadow-blob").setDisplaySize(44, 12).setAlpha(0.8).setDepth(1);
-    this.add.image(doorX, doorY - 30 + 2, "bulkhead").setOrigin(0).setDepth(doorY - 6);
-    // steam from the vent
-    const vent = this.map.markers.find((m) => m.id === "vent")!;
-    this.add.particles(vent.x * TILE + 8, vent.y * TILE - 2, "px", {
-      speedY: { min: -10, max: -18 }, speedX: { min: -4, max: 4 }, lifespan: 1600, alpha: { start: 0.45, end: 0 },
-      scale: { start: 2, end: 5 }, frequency: 180, tint: 0xb0b0c8,
-    }).setDepth(vent.y * TILE + 20);
+    if (m.kind === "rooftop") {
+      for (let x = 0; x < m.width; x++) this.keep(this.add.image(x * TILE, 3 * TILE, "ledge-front").setOrigin(0).setDepth(0));
+      for (let x = 1; x < m.width - 1; x++) this.keep(this.add.image(x * TILE, 3 * TILE + 7, "ao-strip").setOrigin(0).setDepth(0));
+    }
+    if (m.kind === "castle") for (let x = 1; x < m.width - 1; x++) this.keep(this.add.image(x * TILE, 3 * TILE, "ao-strip").setOrigin(0).setDepth(0));
+    if (m.kind === "interior") for (let x = 1; x < m.width - 1; x++) this.keep(this.add.image(x * TILE, 2 * TILE, "ao-strip").setOrigin(0).setDepth(0));
+    // props
+    for (const p of m.props) this.drawProp(p.kind, p.x, p.y);
+    // ambient particles
+    if (m.id === "chelsea-rooftop") {
+      const vent = m.markers.find((k) => k.id === "vent")!;
+      this.keep(this.add.particles(vent.x * TILE + 8, vent.y * TILE - 2, "px", {
+        speedY: { min: -10, max: -18 }, speedX: { min: -4, max: 4 }, lifespan: 1600, alpha: { start: 0.45, end: 0 },
+        scale: { start: 2, end: 5 }, frequency: 180, tint: 0xb0b0c8,
+      }).setDepth(vent.y * TILE + 20));
+    }
+    // lighting by time of day and kind
+    const top = m.kind === "interior" ? 0 : 2 * TILE;
+    if (night) this.keep(this.add.rectangle(0, top, VIEW_W, VIEW_H - top, m.kind === "interior" ? 0x303060 : 0x202060, m.kind === "interior" ? 0.1 : 0.16).setOrigin(0).setDepth(500).setBlendMode(Phaser.BlendModes.MULTIPLY));
+    if (tod === "dusk") this.keep(this.add.rectangle(0, top, VIEW_W, VIEW_H - top, 0xffa060, 0.12).setOrigin(0).setDepth(500).setBlendMode(Phaser.BlendModes.MULTIPLY));
+    if (tod === "dawn") this.keep(this.add.rectangle(0, top, VIEW_W, VIEW_H - top, 0xffd0a0, 0.1).setOrigin(0).setDepth(500).setBlendMode(Phaser.BlendModes.MULTIPLY));
+    if (m.id === "chelsea-rooftop" && night) {
+      const lamp = this.keep(this.add.image(2 * TILE + 16, 12 * TILE + 2, "light-warm").setDepth(501).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.9));
+      this.tweens.add({ targets: lamp, alpha: 0.7, duration: 90, yoyo: true, repeat: -1, repeatDelay: Phaser.Math.Between(1200, 3000) });
+      this.keep(this.add.image(9 * TILE, 9 * TILE, "light-cool").setDepth(501).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.7));
+    }
+    this.buildWeather();
   }
 
-  private drawLighting() {
-    // night wash
-    this.add.rectangle(0, 2 * TILE, VIEW_W, VIEW_H - 2 * TILE, 0x202060, 0.16).setOrigin(0).setDepth(500).setBlendMode(Phaser.BlendModes.MULTIPLY);
-    // warm lamp over the stairwell door; cool glow up through the skylight
-    const lamp = this.add.image(2 * TILE + 16, 12 * TILE + 2, "light-warm").setDepth(501).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.9);
-    this.tweens.add({ targets: lamp, alpha: 0.7, duration: 90, yoyo: true, repeat: -1, repeatDelay: Phaser.Math.Between(1200, 3000) });
-    this.add.image(9 * TILE, 9 * TILE, "light-cool").setDepth(501).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.7);
-    this.add.image(15.5 * TILE, 4 * TILE, "light-cool").setDepth(501).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.25).setDisplaySize(140, 140);
+  private drawProp(kind: string, tx: number, ty: number) {
+    const key = kind === "water-tower" || kind === "bulkhead" ? kind : `prop-${kind}`;
+    if (!this.textures.exists(key)) return;
+    const img = this.textures.get(key).getSourceImage() as HTMLImageElement | HTMLCanvasElement;
+    const w = img.width, h = img.height;
+    const x = tx * TILE + (kind === "water-tower" ? -2 : 0), baseY = (ty + 1) * TILE;
+    const ground = kind === "bugle-sign" || kind === "banner" || kind === "gate";
+    if (!ground) this.keep(this.add.image(x + w / 2, baseY - 2, "shadow-blob").setDisplaySize(Math.min(64, w + 8), Math.max(6, Math.round(w / 4))).setAlpha(0.8).setDepth(1));
+    this.keep(this.add.image(x, baseY - h, key).setOrigin(0).setDepth(ground ? 0.5 : baseY - 4));
+    if (kind === "torch" || kind === "lamppost") {
+      const lx = x + w / 2, ly = baseY - h + 4;
+      const glow = this.keep(this.add.image(lx, ly, "light-warm").setDepth(501).setBlendMode(Phaser.BlendModes.ADD).setAlpha(kind === "torch" ? 0.6 : 0.45).setDisplaySize(kind === "torch" ? 56 : 80, kind === "torch" ? 56 : 80));
+      this.tweens.add({ targets: glow, alpha: glow.alpha * 0.8, duration: 120, yoyo: true, repeat: -1, repeatDelay: Phaser.Math.Between(300, 1200) });
+      if (kind === "torch") this.keep(this.add.particles(lx, ly, "px", { speedY: { min: -14, max: -24 }, speedX: { min: -3, max: 3 }, lifespan: 500, alpha: { start: 0.9, end: 0 }, scale: { start: 1.5, end: 0.5 }, frequency: 90, tint: [0xff8a20, 0xffd860] }).setDepth(502));
+    }
+    if (kind === "holo-table") this.keep(this.add.image(x + w / 2, baseY - h + 4, "light-cool").setDepth(501).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.6).setDisplaySize(70, 70));
+  }
+
+  private clearWeather() { for (const o of this.weatherObjects) o.destroy(); this.weatherObjects = []; }
+  private buildWeather() {
+    this.clearWeather();
+    const w = this.weather;
+    if (this.map.kind === "interior" || w === "clear") return;
+    const keep = <T extends Phaser.GameObjects.GameObject>(o: T) => { this.weatherObjects.push(o); return o; };
+    if (w === "rain" || w === "storm") {
+      keep(this.add.particles(0, -10, "raindrop", { x: { min: -20, max: VIEW_W }, speedY: { min: 220, max: 300 }, speedX: { min: 30, max: 50 }, lifespan: 1100, quantity: w === "storm" ? 4 : 2, frequency: 40, alpha: { start: 0.7, end: 0.3 } }).setDepth(600));
+      keep(this.add.rectangle(0, 0, VIEW_W, VIEW_H, 0x203050, w === "storm" ? 0.22 : 0.12).setOrigin(0).setDepth(599).setBlendMode(Phaser.BlendModes.MULTIPLY));
+      if (w === "storm") this.time.addEvent({ delay: 4000, loop: true, callback: () => { if (this.weather === "storm" && Math.random() < 0.5) this.cameras.main.flash(90, 220, 230, 255, false); } });
+    } else if (w === "snow") {
+      keep(this.add.particles(0, -4, "snowflake", { x: { min: -10, max: VIEW_W }, speedY: { min: 18, max: 34 }, speedX: { min: -8, max: 8 }, lifespan: 9000, frequency: 90, alpha: { start: 0.9, end: 0.5 } }).setDepth(600));
+    } else if (w === "fog") {
+      const f1 = keep(this.add.image(0, 0, "fog").setOrigin(0).setDepth(600).setAlpha(0.9));
+      const f2 = keep(this.add.image(-320, 0, "fog").setOrigin(0).setDepth(600).setAlpha(0.9));
+      this.tweens.add({ targets: [f1, f2], x: "+=320", duration: 40000, repeat: -1 });
+    }
   }
 
   private resetStage() {
@@ -251,10 +312,28 @@ export class TheaterScene extends Phaser.Scene {
     switch (e.type) {
       case "title": return this.title.show(e.issue, e.title, e.subtitle, e.ms);
       case "scene": {
-        this.hud.setText(`${e.locationName.toUpperCase()}  ·  ${e.timeOfDay.toUpperCase()}`);
+        this.hud.setText(`${e.locationName.toUpperCase()}  ·  ${e.timeOfDay.toUpperCase()}${e.weather && e.weather !== "clear" ? "  ·  " + e.weather.toUpperCase() : ""}`);
+        const moved = e.location !== this.map.id;
+        const changed = moved || e.timeOfDay !== this.timeOfDay || (e.weather ?? "clear") !== this.weather;
+        if (moved) {
+          await this.tween({ targets: this.cameras.main, alpha: 0, duration: 300 } as unknown as Phaser.Types.Tweens.TweenBuilderConfig);
+          for (const a of this.actors.values()) { a.sprite.destroy(); a.label.destroy(); a.shadow.destroy(); a.hpBar.root.destroy(); }
+          this.actors.clear();
+          this.map = MAPS[e.location] ?? this.map;
+        }
+        this.timeOfDay = e.timeOfDay; this.weather = e.weather ?? "clear";
+        if (changed) this.buildStage();
+        if (moved) this.tweens.add({ targets: this.cameras.main, alpha: 1, duration: 400 });
         if (e.caption) return this.caption.show(e.caption, e.ms + 1200);
         return this.wait(e.ms);
       }
+      case "travel": {
+        const names = e.who.map((id) => this.actors.get(id)?.name ?? id).join(" & ");
+        for (const id of e.who) { const a = this.actors.get(id); if (a) this.tweens.add({ targets: [a.sprite, a.label, a.shadow], alpha: 0, duration: 500 }); }
+        await this.caption.show(`${names}: ${e.how ?? "on the move"}${e.minutes ? ` (${e.minutes} min)` : ""}`, e.ms);
+        return;
+      }
+      case "recap": return this.recapCard(e.title, e.lines, e.ms);
       case "spawn": { this.spawn(e); return this.wait(e.ms); }
       case "despawn": {
         const a = this.actors.get(e.who); if (!a) return;
@@ -455,6 +534,20 @@ export class TheaterScene extends Phaser.Scene {
     this.syncAttach(a); this.syncAttach(t);
     const spent = 140 + 170 + 120 + 200;
     await this.wait(Math.max(0, e.ms - spent));
+  }
+
+  /** "While you were away": a dark card listing off-panel one-liners. */
+  private recapCard(title: string, lines: string[], ms: number): Promise<void> {
+    const w = VIEW_W - 24, x = 12, y = 20;
+    const box = windowBox(this, x, y, w, VIEW_H - 40).setDepth(2100).setAlpha(0);
+    const head = this.add.text(x + 10, y + 10, title, { ...FONT, color: PAL.yellow, wordWrap: { width: w - 20 } }).setDepth(2101).setAlpha(0);
+    const texts: Phaser.GameObjects.Text[] = [];
+    let ly = y + 30;
+    for (const l of lines) { const t = this.add.text(x + 10, ly, `· ${l}`, { ...FONT, fontSize: "6px", wordWrap: { width: w - 20 }, lineSpacing: 2 }).setDepth(2101).setAlpha(0); texts.push(t); ly += t.height + 6; if (ly > VIEW_H - 40) break; }
+    const all = [box, head, ...texts];
+    this.tweens.add({ targets: [box, head], alpha: 1, duration: 300 });
+    texts.forEach((t, i) => this.tweens.add({ targets: t, alpha: 1, duration: 300, delay: 500 + i * 900 }));
+    return new Promise((r) => this.time.delayedCall(ms - 400, () => this.tweens.add({ targets: all, alpha: 0, duration: 400, onComplete: () => { all.forEach((o) => o.destroy()); r(); } })));
   }
 
   private log(level: string, text: string) {

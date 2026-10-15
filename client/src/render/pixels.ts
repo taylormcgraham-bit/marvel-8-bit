@@ -397,3 +397,151 @@ export function makeFx(scene: Phaser.Scene) {
   }
   const p = canvas(scene, "px", 1, 1); px(p.ctx, 0, 0, PAL.white); p.tex.refresh();
 }
+
+/* ------------------------------------------------------------------ phase 4: more tiles */
+
+/** Concrete slabs. */
+function sidewalk(b: Buf, seed: number) {
+  b.rect(0, 0, b.w, b.h, "#8a8a92");
+  b.rect(0, 0, b.w, 1, "#a2a2aa"); b.rect(0, 0, 1, b.h, "#a2a2aa");
+  b.rect(0, b.h - 1, b.w, 1, "#5e5e66"); b.rect(b.w - 1, 0, 1, b.h, "#5e5e66");
+  b.rect(7, 2, 1, 1, "#6a6a72"); b.rect(3, 11, 2, 1, "#6a6a72");
+  grain(b, 0.05, seed);
+}
+function asphalt(b: Buf, seed: number) {
+  b.rect(0, 0, b.w, b.h, "#34343c");
+  for (let y = 0; y < b.h; y += 2) for (let x = 0; x < b.w; x += 2) { const r = hash(x, y, seed); if (r > 0.8) b.rect(x, y, 2, 2, "#3e3e46"); else if (r < 0.1) b.rect(x, y, 2, 2, "#2a2a32"); }
+  grain(b, 0.04, seed);
+}
+function facade(b: Buf, seed: number, window: boolean, door: boolean) {
+  b.rect(0, 0, b.w, b.h, "#6a6a78");
+  for (let y = 0; y < b.h; y += 4) { b.rect(0, y + 3, b.w, 1, "#4a4a56"); b.rect(y % 8 ? 8 : 0, y, 1, 3, "#4a4a56"); }
+  b.rect(0, 0, b.w, 1, "#8a8a98");
+  if (window) { b.rect(3, 2, 10, 11, "#262636"); b.rect(4, 3, 8, 9, "#3a5a8a"); b.rect(4, 3, 3, 3, "#6a9ad0"); b.rect(7, 3, 1, 9, "#262636"); b.rect(4, 7, 8, 1, "#262636"); b.rect(3, 13, 10, 1, "#8a8a98"); }
+  if (door) { b.rect(1, 0, 14, 16, "#2a2a3a"); b.rect(2, 1, 12, 15, "#b08a40"); b.rect(3, 2, 10, 12, "#204060"); b.rect(7, 2, 2, 12, "#b08a40"); b.rect(2, 1, 12, 1, "#e0c070"); }
+  grain(b, 0.04, seed);
+}
+function carpet(b: Buf, seed: number) {
+  b.rect(0, 0, b.w, b.h, "#4a2a3a");
+  for (let y = 0; y < b.h; y += 4) for (let x = 0; x < b.w; x += 4) if ((x + y) % 8 === 0) b.rect(x + 1, y + 1, 2, 2, "#5e3a4a");
+  grain(b, 0.04, seed);
+}
+function marble(b: Buf, seed: number) {
+  b.rect(0, 0, b.w, b.h, "#d8d8e0");
+  b.rect(0, 0, b.w, 1, "#f0f0f6"); b.rect(0, 0, 1, b.h, "#f0f0f6"); b.rect(0, b.h - 1, b.w, 1, "#a8a8b4"); b.rect(b.w - 1, 0, 1, b.h, "#a8a8b4");
+  for (let i = 0; i < 8; i++) b.set(3 + i, 10 - i, "#b8b8c4");
+  grain(b, 0.03, seed);
+}
+function wall(b: Buf, seed: number, window: boolean) {
+  b.rect(0, 0, b.w, b.h, "#303048");
+  b.rect(0, b.h - 3, b.w, 3, "#202034"); b.rect(0, b.h - 3, b.w, 1, "#505070");
+  if (window) { b.rect(1, 1, 14, 11, "#101c38"); for (let i = 0; i < 20; i++) { const x = Math.floor(hash(i, 1, seed) * 14) + 1, y = Math.floor(hash(i, 2, seed) * 10) + 1; b.set(x, y, hash(i, 3, seed) > 0.5 ? "#ffd880" : "#6a8ab0"); } b.rect(1, 1, 14, 1, "#4a6aa0"); b.rect(8, 1, 1, 11, "#4a6aa0"); }
+  grain(b, 0.03, seed);
+}
+function flagstone(b: Buf, seed: number) {
+  b.rect(0, 0, b.w, b.h, "#4e4e58");
+  const stones = [[0, 0, 7, 6], [8, 0, 8, 5], [0, 7, 5, 9], [6, 6, 6, 5], [13, 6, 3, 4], [7, 12, 9, 4]];
+  stones.forEach(([x, y, w, h], i) => { const c = tone("#6e6e7a", (hash(i, 1, seed) - 0.5) * 0.25); b.rect(x!, y!, w! - 1, h! - 1, c); b.rect(x!, y!, w! - 1, 1, tone(c, 0.15)); b.rect(x!, y! + h! - 2, w! - 1, 1, tone(c, -0.2)); });
+  grain(b, 0.05, seed);
+}
+function castleWall(b: Buf, seed: number, battlement: boolean) {
+  b.rect(0, 0, b.w, b.h, "#3a3a46");
+  for (let y = 0; y < b.h; y += 8) { b.rect(0, y + 7, b.w, 1, "#22222c"); const off = y % 16 ? 8 : 0; b.rect(off, y, 1, 7, "#22222c"); b.rect(off + 1, y, 7, 1, "#5a5a68"); }
+  if (battlement) { b.px.fill(null); b.rect(0, 10, b.w, 6, "#3a3a46"); b.rect(2, 4, 5, 6, "#3a3a46"); b.rect(10, 4, 5, 6, "#3a3a46"); b.rect(2, 4, 5, 1, "#5a5a68"); b.rect(10, 4, 5, 1, "#5a5a68"); }
+  grain(b, 0.05, seed);
+}
+
+export function makeTiles2(scene: Phaser.Scene) {
+  const defs: [Tile, (b: Buf) => void][] = [
+    ["sidewalk", (b) => sidewalk(b, 21)],
+    ["curb", (b) => { sidewalk(b, 22); b.rect(0, 13, 16, 3, "#5e5e66"); b.rect(0, 13, 16, 1, "#a2a2aa"); }],
+    ["road", (b) => asphalt(b, 23)],
+    ["road-line", (b) => { asphalt(b, 24); b.rect(2, 7, 10, 2, "#e0c050"); }],
+    ["facade", (b) => facade(b, 25, false, false)],
+    ["facade-window", (b) => facade(b, 26, true, false)],
+    ["facade-door", (b) => facade(b, 27, false, true)],
+    ["carpet", (b) => carpet(b, 28)],
+    ["marble", (b) => marble(b, 29)],
+    ["wall", (b) => wall(b, 30, false)],
+    ["wall-window", (b) => wall(b, 31, true)],
+    ["flagstone", (b) => flagstone(b, 32)],
+    ["castle-wall", (b) => castleWall(b, 33, false)],
+    ["battlement", (b) => castleWall(b, 34, true)],
+    ["dais", (b) => { marble(b, 35); b.rect(0, 0, 16, 16, "#5a4a3a"); b.rect(0, 0, 16, 1, "#8a7a5a"); b.rect(0, 15, 16, 1, "#2a2016"); grain(b, 0.04, 35); }],
+  ];
+  for (const [k, fn] of defs) {
+    if (skip(`tile-${k}`)) continue;
+    const { tex, ctx } = canvas(scene, `tile-${k}`, TILE, TILE);
+    const b = new Buf(TILE, TILE); fn(b); b.draw(ctx); tex.refresh();
+  }
+}
+
+/** Props for the street, lounge and castle. Each is one texture, origin bottom-left at its tile. */
+export function makeProps(scene: Phaser.Scene) {
+  const mk = (key: string, w: number, h: number, fn: (b: Buf) => void, soft = true) => {
+    if (scene.textures.exists(key) || skip(key)) return;
+    const { tex, ctx } = canvas(scene, key, w, h);
+    const b = new Buf(w, h); fn(b); grain(b, 0.04, key.length); if (soft) { outline(b, "soft"); shade(b, null, 0.12, 0.2, true); }
+    b.draw(ctx); tex.refresh();
+  };
+  mk("prop-car", 34, 18, (b) => {
+    const body = "#d8b020";
+    b.rect(2, 6, 30, 9, body); b.rect(7, 2, 18, 5, body); b.rect(9, 3, 6, 4, "#8ac0e0"); b.rect(17, 3, 6, 4, "#8ac0e0");
+    b.rect(2, 10, 30, 1, tone(body, -0.3)); b.rect(5, 14, 6, 4, "#202028"); b.rect(23, 14, 6, 4, "#202028"); b.rect(7, 15, 2, 2, "#8a8a94"); b.rect(25, 15, 2, 2, "#8a8a94");
+    b.rect(2, 8, 2, 2, "#fff0a0"); b.rect(30, 8, 2, 2, "#ff4040"); b.rect(12, 1, 8, 2, "#f0e0a0");
+  });
+  mk("prop-lamppost", 10, 30, (b) => { b.rect(4, 6, 2, 24, "#2a3a2a"); b.rect(2, 4, 6, 3, "#2a3a2a"); b.rect(3, 1, 4, 4, "#ffe8a0"); b.rect(2, 0, 6, 1, "#2a3a2a"); b.rect(3, 28, 4, 2, "#2a3a2a"); });
+  mk("prop-hydrant", 8, 12, (b) => { b.rect(2, 2, 4, 10, "#d02020"); b.rect(1, 5, 6, 2, "#d02020"); b.rect(3, 0, 2, 2, "#d02020"); b.rect(0, 5, 2, 2, "#a01818"); b.rect(6, 5, 2, 2, "#a01818"); });
+  mk("prop-newsstand", 28, 22, (b) => { b.rect(0, 4, 28, 18, "#2a5a3a"); b.rect(0, 0, 28, 5, "#1a3a2a"); b.rect(2, 8, 24, 10, "#e8e0c8"); for (let i = 0; i < 4; i++) { b.rect(3 + i * 6, 9, 5, 4, i % 2 ? "#d04040" : "#4060b0"); b.rect(3 + i * 6, 14, 5, 3, "#a0a0a0"); } b.rect(6, 1, 16, 2, "#ffd860"); });
+  mk("prop-subway", 26, 18, (b) => { b.rect(0, 2, 26, 16, "#303040"); b.rect(2, 4, 22, 14, "#101018"); for (let y = 6; y < 18; y += 3) b.rect(2, y, 22, 1, "#3a3a4a"); b.rect(0, 0, 26, 3, "#2a6a2a"); b.rect(2, 0, 22, 1, "#ffffff"); b.rect(0, 2, 2, 16, "#5a5a6a"); b.rect(24, 2, 2, 16, "#5a5a6a"); });
+  mk("prop-bugle-sign", 64, 14, (b) => { b.rect(0, 0, 64, 14, "#101018"); b.rect(1, 1, 62, 12, "#d8d8e8"); b.rect(4, 4, 56, 6, "#101018"); for (let x = 6; x < 58; x += 5) b.rect(x, 5, 3, 4, "#ffd860"); b.rect(0, 13, 64, 1, "#404050"); }, false);
+  mk("prop-couch", 36, 16, (b) => { b.rect(0, 4, 36, 12, "#6a2a3a"); b.rect(0, 0, 36, 6, "#7a3a4a"); b.rect(2, 6, 32, 6, "#8a4a5a"); b.rect(0, 6, 4, 10, "#5a2030"); b.rect(32, 6, 4, 10, "#5a2030"); b.rect(2, 14, 32, 2, "#3a1a24"); });
+  mk("prop-bar", 44, 18, (b) => { b.rect(0, 6, 44, 12, "#4a3020"); b.rect(0, 4, 44, 3, "#8a6a40"); b.rect(0, 4, 44, 1, "#c0a070"); for (let x = 3; x < 44; x += 7) { b.rect(x, 0, 2, 4, hash(x, 1, 5) > 0.5 ? "#c0e0ff" : "#ffd860"); } b.rect(2, 9, 40, 1, "#3a2416"); });
+  mk("prop-holo-table", 28, 20, (b) => { b.rect(2, 10, 24, 10, "#303848"); b.rect(0, 8, 28, 3, "#5a6a80"); b.rect(0, 8, 28, 1, "#8a9ab0"); b.rect(10, 0, 8, 8, "#2a8ad0"); b.rect(6, 2, 16, 5, "#3aa0f0"); b.rect(12, 1, 4, 2, "#a0e0ff"); b.rect(8, 4, 12, 1, "#a0e0ff"); }, false);
+  mk("prop-elevator", 28, 26, (b) => { b.rect(0, 0, 28, 26, "#4a4a5a"); b.rect(2, 2, 11, 24, "#8a8a9a"); b.rect(15, 2, 11, 24, "#8a8a9a"); b.rect(2, 2, 11, 1, "#c0c0d0"); b.rect(15, 2, 11, 1, "#c0c0d0"); b.rect(12, 0, 4, 2, "#58d854"); });
+  mk("prop-plant", 14, 22, (b) => { b.rect(4, 14, 6, 8, "#8a5a30"); b.rect(2, 6, 10, 9, "#2a7a3a"); b.rect(0, 2, 6, 6, "#3a9a4a"); b.rect(8, 0, 6, 7, "#3a9a4a"); b.rect(5, 10, 4, 3, "#1a5a2a"); });
+  mk("prop-throne", 28, 34, (b) => { b.rect(4, 0, 20, 34, "#2a2a34"); b.rect(6, 2, 16, 20, "#1a5a2a"); b.rect(0, 20, 28, 14, "#3a3a46"); b.rect(2, 22, 24, 10, "#2a2a34"); b.rect(10, 4, 8, 8, "#8a8a9a"); b.rect(12, 6, 4, 2, "#101014"); b.rect(12, 9, 4, 1, "#101014"); b.rect(4, 0, 20, 2, "#c0a040"); });
+  mk("prop-banner", 14, 30, (b) => { b.rect(0, 0, 14, 2, "#c0a040"); b.rect(1, 2, 12, 26, "#1a6a2a"); b.rect(1, 2, 12, 1, "#2a8a3a"); b.rect(4, 8, 6, 8, "#8a8a9a"); b.rect(5, 10, 4, 2, "#101014"); b.rect(5, 13, 4, 1, "#101014"); b.rect(1, 26, 4, 4, "#1a6a2a"); b.rect(9, 26, 4, 4, "#1a6a2a"); });
+  mk("prop-torch", 8, 18, (b) => { b.rect(3, 8, 2, 10, "#4a3020"); b.rect(2, 6, 4, 3, "#2a2a34"); b.rect(2, 1, 4, 5, "#ff8a20"); b.rect(3, 0, 2, 3, "#ffd860"); });
+  mk("prop-gate", 36, 26, (b) => { b.rect(0, 0, 36, 26, "#2a2a34"); b.rect(3, 3, 30, 23, "#101014"); for (let x = 5; x < 34; x += 5) b.rect(x, 3, 2, 23, "#5a5a6a"); for (let y = 6; y < 26; y += 6) b.rect(3, y, 30, 2, "#5a5a6a"); b.rect(0, 0, 36, 2, "#4a4a56"); });
+  mk("prop-statue", 20, 34, (b) => { b.rect(2, 26, 16, 8, "#3a3a46"); b.rect(6, 4, 8, 22, "#5a5a68"); b.rect(5, 0, 10, 8, "#6a6a78"); b.rect(2, 8, 16, 10, "#4a6a4a"); b.rect(7, 3, 2, 1, "#101014"); b.rect(11, 3, 2, 1, "#101014"); });
+}
+
+/** Sky by time of day, plus a far-mountain variant for Latveria. */
+export function makeSkies(scene: Phaser.Scene, w: number) {
+  const h = 48;
+  const bands: Record<string, string[]> = {
+    night: [PAL.night0, PAL.night0, PAL.night1, PAL.night1, PAL.night2, PAL.night3],
+    dawn: ["#1a1a3a", "#3a2a4a", "#6a3a5a", "#a05a5a", "#d08a60", "#f0b878"],
+    day: ["#3a7ad8", "#4a8ae0", "#5a9ae8", "#6aaaf0", "#8ac0f8", "#b0d8ff"],
+    dusk: ["#2a1a4a", "#4a2a5a", "#8a3a5a", "#c05a4a", "#e08a40", "#f0b060"],
+  };
+  for (const [tod, cols] of Object.entries(bands)) {
+    const key = `sky-${tod}`;
+    if (scene.textures.exists(key)) continue;
+    const { tex, ctx } = canvas(scene, key, w, h);
+    cols.forEach((c, i) => px(ctx, 0, i * 8, c, w, 8));
+    if (tod === "night" || tod === "dawn") for (let i = 0; i < (tod === "night" ? 90 : 25); i++) { const x = Math.floor(hash(i, 1, 7) * w), y = Math.floor(hash(i, 2, 7) * 26); px(ctx, x, y, hash(i, 3, 7) > 0.75 ? PAL.star : PAL.starDim); }
+    if (tod === "night") { px(ctx, 41, 6, PAL.white, 6, 8); px(ctx, 40, 7, PAL.white, 8, 6); px(ctx, 42, 5, PAL.white, 4, 10); px(ctx, 44, 8, "#c8ccf0", 2, 2); }
+    if (tod === "day") { for (let i = 0; i < 3; i++) { const x = 40 + i * 110; px(ctx, x, 10 + i * 4, "#ffffff", 40, 6); px(ctx, x + 10, 6 + i * 4, "#ffffff", 20, 5); } px(ctx, 268, 6, "#fff8c0", 10, 10); px(ctx, 266, 8, "#fff8c0", 14, 6); }
+    if (tod === "dusk") { px(ctx, 60, 30, "#ffd060", 12, 6); px(ctx, 58, 32, "#ffd060", 16, 3); }
+    tex.refresh();
+  }
+  if (!scene.textures.exists("mountains")) {
+    const { tex, ctx } = canvas(scene, "mountains", w, h);
+    let x = 0, i = 0;
+    while (x < w) {
+      const pw = 30 + Math.floor(hash(i, 4, 3) * 40), ph = 14 + Math.floor(hash(i, 5, 3) * 22);
+      for (let k = 0; k < pw; k++) { const t = Math.abs(k - pw / 2) / (pw / 2); const hh = Math.round(ph * (1 - t)); px(ctx, x + k, h - hh, "#1a1a2e", 1, hh); if (hh > ph * 0.7) px(ctx, x + k, h - hh, "#d8d8e8", 1, 1); }
+      x += pw - 10; i++;
+    }
+    tex.refresh();
+  }
+  if (!scene.textures.exists("fog")) {
+    const { tex, ctx } = canvas(scene, "fog", 320, 240);
+    for (let i = 0; i < 60; i++) { const x = Math.floor(hash(i, 1, 9) * 320), y = Math.floor(hash(i, 2, 9) * 240), r = 20 + Math.floor(hash(i, 3, 9) * 40); const g = ctx.createRadialGradient(x, y, 2, x, y, r); g.addColorStop(0, "rgba(200,205,220,0.22)"); g.addColorStop(1, "rgba(200,205,220,0)"); ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2); }
+    tex.refresh();
+  }
+  if (!scene.textures.exists("raindrop")) { const { tex, ctx } = canvas(scene, "raindrop", 1, 5); px(ctx, 0, 0, "#9ab8e0", 1, 5); tex.refresh(); }
+  if (!scene.textures.exists("snowflake")) { const { tex, ctx } = canvas(scene, "snowflake", 2, 2); px(ctx, 0, 0, "#ffffff", 2, 2); tex.refresh(); }
+}

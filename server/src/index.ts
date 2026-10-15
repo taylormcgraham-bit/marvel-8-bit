@@ -73,9 +73,13 @@ const server = http.createServer(async (req, res) => {
       mode: run.mode,
       issue: run.world.issue,
       gameTime: run.world.clock.label,
+      location: run.world.map.id,
+      weather: run.world.weather,
+      sim: { schemes: run.sim.schemes, factions: run.sim.factions, whereabouts: run.sim.whereabouts },
       timeOfDay: run.world.timeOfDay,
       sceneLocked: run.world.clock.sceneLocked,
       actors: [...run.world.actors.values()].map(({ character, ...a }) => a),
+      onStage: run.world.stage().map((a) => a.id),
       events: run.world.events.length,
     }, null, 2));
     return;

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { GameEvent, Dir, Injury } from "../../shared/events.js";
-import type { MapDef } from "../../shared/maps.js";
+import type { GameEvent, Dir, Injury, Weather } from "../../shared/events.js";
+import { MAPS, type MapDef } from "../../shared/maps.js";
 import { loadCharacter, type Character } from "./canon.js";
 import { CONFIG } from "./config.js";
 import { Rng } from "./rng.js";
@@ -13,6 +13,8 @@ export interface Actor {
   x: number;
   y: number;
   facing: Dir;
+  /** map id the character is currently on */
+  location: string;
   hp: number;
   maxHp: number;
   stamina: number;
@@ -52,7 +54,9 @@ interface Persisted { sceneNote: string; rng: number; seq: number }
  * Phase 1 keeps the log as JSONL on disk; Phase 4 moves it to SQLite.
  */
 export class World {
-  readonly map: MapDef;
+  /** the map on stage right now */
+  map: MapDef;
+  weather: Weather = "clear";
   readonly actors = new Map<string, Actor>();
   readonly events: GameEvent[] = [];
   readonly rng: Rng;
@@ -77,7 +81,12 @@ export class World {
   }
 
   get timeOfDay() { return this.clock.timeOfDay; }
+  get location() { return this.map.id; }
+  setLocation(id: string) { const m = MAPS[id]; if (m) this.map = m; }
   marker(id: string) { return this.map.markers.find((m) => m.id === id); }
+  /** Actors on the current map. */
+  stage(): Actor[] { return [...this.actors.values()].filter((a) => a.location === this.map.id); }
+  onStage(id: string): boolean { return this.actors.get(id)?.location === this.map.id; }
   private nameCache = new Map<string, string>();
   /** Display name for any character id, on stage or not. */
   nameOf(id: string): string {
@@ -115,9 +124,9 @@ export class World {
   }
 
   /** Register a character on stage (state only; the engine emits the spawn event). */
-  addActor(c: Character, x: number, y: number, facing: Dir): Actor {
+  addActor(c: Character, x: number, y: number, facing: Dir, location = this.map.id): Actor {
     const actor: Actor = {
-      id: c.id, name: c.stats.name, x, y, facing,
+      id: c.id, name: c.stats.name, x, y, facing, location,
       hp: 0, maxHp: maxHpFor(c), stamina: 0, maxStamina: maxStaminaFor(c), morale: 0, character: c,
       resources: { ...(c.stats.resources ?? {}) }, injuries: [],
     };
@@ -148,7 +157,9 @@ export class World {
       case "issueEnd": return `=== END OF ISSUE #${e.issue} === ${e.summary}`;
       case "death": return `[DEATH] ${e.name} dies: ${e.how}`;
       case "title": return `=== ISSUE #${e.issue}: ${e.title}${e.subtitle ? " - " + e.subtitle : ""} ===`;
-      case "scene": return `[SCENE] ${e.locationName}, ${e.timeOfDay}${e.caption ? ": " + e.caption : ""}`;
+      case "scene": return `[SCENE] ${e.locationName}, ${e.timeOfDay}${e.weather && e.weather !== "clear" ? ", " + e.weather : ""}${e.caption ? ": " + e.caption : ""}`;
+      case "travel": return `${e.who.map(n).join(", ")} travel${e.who.length > 1 ? "" : "s"} from ${MAPS[e.from]?.name ?? e.from} to ${MAPS[e.to]?.name ?? e.to}${e.how ? " " + e.how : ""} (${e.minutes} min).`;
+      case "recap": return `[WHILE YOU WERE AWAY] ${e.lines.join(" ")}`;
       case "spawn": return `${e.name} is present at ${e.at}.`;
       case "despawn": return `${n(e.who)} leaves${e.how ? ` (${e.how})` : ""}.`;
       case "note": return `[${e.level.toUpperCase()}] ${e.text}`;
@@ -163,9 +174,9 @@ export class World {
         if (!a) {
           const c = loadCharacter(e.who);
           if (!c) return;
-          a = this.addActor(c, e.x, e.y, e.facing);
+          a = this.addActor(c, e.x, e.y, e.facing, e.location ?? this.map.id);
         }
-        a.x = e.x; a.y = e.y; a.facing = e.facing;
+        a.x = e.x; a.y = e.y; a.facing = e.facing; a.location = e.location ?? this.map.id;
         a.hp = e.hp; a.maxHp = e.maxHp;
         if (e.stamina !== undefined) a.stamina = e.stamina;
         if (e.maxStamina !== undefined) a.maxStamina = e.maxStamina;
@@ -175,6 +186,12 @@ export class World {
       }
       case "despawn": this.actors.delete(e.who); break;
       case "death": this.actors.delete(e.who); this.deceased.add(e.who); break;
+      case "scene": { this.setLocation(e.location); this.weather = e.weather ?? "clear"; break; }
+      case "travel": {
+        for (const id of e.who) { const a = this.actors.get(id); if (a) { a.location = e.to; const m = MAPS[e.to]; const entry = m?.markers.find((k) => k.id === m.entry[0]); if (entry) { a.x = entry.x; a.y = entry.y; } } }
+        this.setLocation(e.to);
+        break;
+      }
       case "move": {
         const a = this.actors.get(e.who);
         if (a) {
@@ -259,10 +276,10 @@ export class World {
     const t = Date.now();
     const out: GameEvent[] = [];
     out.push({ type: "title", seq: 0, t, ms: 2600, issue: this.issue.number, title: this.issue.title, subtitle: this.issue.subtitle });
-    out.push({ type: "scene", seq: 0, t, ms: 1200, location: this.map.id, locationName: this.map.name, timeOfDay: this.timeOfDay });
-    for (const a of this.actors.values()) {
+    out.push({ type: "scene", seq: 0, t, ms: 1200, location: this.map.id, locationName: this.map.name, timeOfDay: this.timeOfDay, weather: this.weather, gameTime: this.clock.label });
+    for (const a of this.stage()) {
       out.push({
-        type: "spawn", seq: 0, t, ms: 400, who: a.id, name: a.name, at: this.nearestMarker(a).id, x: a.x, y: a.y, facing: a.facing,
+        type: "spawn", seq: 0, t, ms: 400, who: a.id, name: a.name, location: a.location, at: this.nearestMarker(a).id, x: a.x, y: a.y, facing: a.facing,
         hp: a.hp, maxHp: a.maxHp, stamina: a.stamina, maxStamina: a.maxStamina, resources: a.resources, injuries: a.injuries,
         palette: a.character.stats.palette, role: a.character.stats.role, look: a.character.stats.look,
       });

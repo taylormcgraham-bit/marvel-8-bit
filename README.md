@@ -89,10 +89,12 @@ Generation only happens while a theater is connected and its playback buffer is 
 
 ## Status
 
-Phases 0 to 3 are done: canon for the launch roster; one rooftop map with the live Director
+Phases 0 to 4 are done: canon for the launch roster; one rooftop map with the live Director
 and prompt-cached bibles; fights run in rounds by the Tactician with stamina, injuries that
 persist and heal over game time, and enforced resources; issues planned by the Showrunner as
 three-act arcs with objectives, closed by the Archivist into a Chronicle and long-term
-memory; the Editor's Desk; a world that replays its event log on restart; procedural
-block-style art with a drop-in pipeline for hand-drawn sheets. Next: Phase 4 (more
-locations, off-panel catch-up, schedules, factions). See `docs/DESIGN.md`.
+memory; the Editor's Desk; four locations with travel between them; a world sim with
+weather, villain scheme meters and faction standings; off-panel catch-up with a recap card
+when you return; a world that replays its event log on restart; procedural block-style art
+with a drop-in pipeline for hand-drawn sheets. Next: Phase 5 (polish: codex, cinematic
+camera, chiptune score, roster requests). See `docs/DESIGN.md`.

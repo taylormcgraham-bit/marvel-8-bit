@@ -11,6 +11,7 @@ import { CONFIG } from "./config.js";
 
 export const ArcAct = z.object({
   title: z.string().max(60),
+  location: z.string().optional().describe("map id if this act happens somewhere else; everyone on stage travels there as the act opens"),
   goal: z.string().max(240).describe("what this act is for dramatically"),
   objectives: z.array(z.object({ id: z.string().regex(/^[a-z0-9-]+$/), text: z.string().max(120) })).min(1).max(3)
     .describe("concrete, observable things the Director can mark done; the act ends when all are done or failed"),
@@ -29,6 +30,7 @@ export const IssuePlan = z.object({
   subtitle: z.string().max(120),
   premise: z.string().max(900),
   antagonist: z.string().describe("character id"),
+  location: z.string().describe("map id where the issue opens (from LOCATIONS)"),
   cast: z.array(z.string()).min(2).max(6).describe("character ids in this issue, including the antagonist"),
   opening: z.array(z.object({ who: z.string(), at: z.string() })).min(1).max(4).describe("who is on stage when the issue opens, and where"),
   opensAfterGameHours: z.number().min(0).max(72).describe("game time between the previous issue and this one"),

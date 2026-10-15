@@ -4,6 +4,8 @@
  */
 import type { Showrunner } from "./showrunner.js";
 import { listCharacterIds, loadCharacter } from "./canon.js";
+import { MAPS } from "../../shared/maps.js";
+import { standingWord } from "./sim.js";
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
 
@@ -78,7 +80,11 @@ export function deskPage(run: Showrunner, notes: { file: string; text: string }[
   const death = d ? `<div class="card"><h2>Planned death: ${esc(run.world.nameOf(d.who))}</h2><p>Act ${d.act}. <b>Mechanism:</b> ${esc(d.mechanism)}</p><p><b>Justification:</b> ${esc(d.justification)}</p>
     <p>Status: <b>${d.status}</b>${d.status === "pending" ? ` (auto-approves ${new Date(d.submittedAt + 24 * 3600_000).toLocaleString()})` : ""}</p>
     ${d.status === "pending" ? `<form method="post" action="/api/deaths/approve"><button class="danger">Approve</button></form><form method="post" action="/api/deaths/veto"><button class="quiet">Veto</button></form>` : ""}</div>` : "";
-  const stage = `<div class="card"><h2>On stage</h2>${[...run.world.actors.values()].map((a) => `<div class="panel"><b>${esc(a.name)}</b> <span class="muted small">HP ${a.hp}/${a.maxHp} · stamina ${a.stamina}/${a.maxStamina}${a.injuries.length ? " · " + a.injuries.map((i) => esc(i.name)).join(", ") : ""}</span><div class="bar"><i style="width:${Math.round(100 * a.hp / a.maxHp)}%"></i></div><div class="small muted">${Object.entries(a.resources).map(([k, v]) => `${esc(k)} ${v}`).join(" · ")}</div></div>`).join("") || "<p class='muted'>Empty.</p>"}
+  const sim = `<div class="card"><h2>World</h2><p class="small"><b>${esc(run.world.map.name)}</b> · ${esc(run.world.weather)} · ${esc(run.world.clock.label)}</p>
+    <h3>Villain schemes</h3>${Object.entries(run.sim.schemes).sort((a, b) => b[1] - a[1]).map(([id, v]) => `<div class="small">${esc(run.world.nameOf(id))} <span class="muted">${Math.round(v)}%</span><div class="bar"><i style="width:${Math.round(v)}%;background:${v >= 80 ? "var(--red)" : v >= 50 ? "var(--yellow)" : "var(--blue)"}"></i></div></div>`).join("")}
+    <h3>Standings</h3><table class="small" style="border-collapse:collapse">${Object.entries(run.sim.factions).filter(([id]) => loadCharacter(id)?.stats.role === "hero").map(([id, m]) => `<tr><td style="padding:2px 10px 2px 0"><b>${esc(run.world.nameOf(id))}</b></td><td>${Object.entries(m).map(([k, v]) => `${esc(k)} <span class="muted">${Math.round(v ?? 0)} ${standingWord(v ?? 0)}</span>`).join(" · ")}</td></tr>`).join("")}</table>
+    <h3>Whereabouts</h3><p class="small">${Object.entries(run.sim.whereabouts).map(([id, m]) => `${esc(run.world.nameOf(id))}: <span class="muted">${esc(MAPS[m]?.name ?? m)}</span>`).join(" · ")}</p></div>`;
+  const stage = `<div class="card"><h2>On stage</h2>${run.world.stage().map((a) => `<div class="panel"><b>${esc(a.name)}</b> <span class="muted small">HP ${a.hp}/${a.maxHp} · stamina ${a.stamina}/${a.maxStamina}${a.injuries.length ? " · " + a.injuries.map((i) => esc(i.name)).join(", ") : ""}</span><div class="bar"><i style="width:${Math.round(100 * a.hp / a.maxHp)}%"></i></div><div class="small muted">${Object.entries(a.resources).map(([k, v]) => `${esc(k)} ${v}`).join(" · ")}</div></div>`).join("") || "<p class='muted'>Empty.</p>"}
     <p class="small muted">Game time ${esc(run.world.clock.label)} · mode ${run.mode}</p></div>`;
   const notesHtml = `<div class="card"><h2>Notes to the Bullpen</h2><p class="muted small">The Showrunner reads these when planning the next issue; the Director reads them every scene. Woven in, never obeyed literally.</p>
     ${notes.map((n) => `<div class="panel note"><div>${esc(n.text)}</div><form method="post" action="/api/notes/delete"><input type="hidden" name="file" value="${esc(n.file)}"><button class="quiet">×</button></form></div>`).join("") || "<p class='muted'>No notes.</p>"}
@@ -86,5 +92,5 @@ export function deskPage(run: Showrunner, notes: { file: string; text: string }[
   const roster = `<div class="card"><h2>Roster</h2><p class="small">${listCharacterIds().map((id) => { const c = loadCharacter(id)!; return `<span class="panel" style="display:inline-block;margin:3px">${esc(c.stats.name)} <span class="muted">${c.stats.role}</span></span>`; }).join(" ")}</p>
     <p class="muted small">To add a character: write a bible and stats.json under canon/characters/&lt;id&gt;/ (docs/DESIGN.md §6) and the Showrunner can cast them.</p></div>`;
   const memory = `<div class="card"><h2>Memory</h2><pre class="small" style="white-space:pre-wrap">${esc(run.memory.describe())}</pre></div>`;
-  return page("Editor's Desk", issue + death + stage + notesHtml + roster + memory, NAV);
+  return page("Editor's Desk", issue + death + stage + sim + notesHtml + roster + memory, NAV);
 }

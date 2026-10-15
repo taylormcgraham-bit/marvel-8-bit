@@ -10,7 +10,7 @@ const DAY = 86_400_000;
 function actor(id: string, grid: Partial<Actor["character"]["stats"]["grid"]> = {}, traits: string[] = [], moves: Move[] = []): Actor {
   const g = { int: 3, str: 3, spd: 3, dur: 3, nrg: 1, fgt: 3, ...grid };
   const a: Actor = {
-    id, name: id, x: 0, y: 0, facing: "down", hp: 60, maxHp: 60, stamina: 20, maxStamina: 20, resources: {}, injuries: [], morale: 0,
+    id, name: id, x: 0, y: 0, facing: "down", location: "chelsea-rooftop", hp: 60, maxHp: 60, stamina: 20, maxStamina: 20, resources: {}, injuries: [], morale: 0,
     character: { id, bible: "", stats: { id, name: id, role: "hero", tier: "city", grid: g, traits, moves, palette: { primary: "#000000", secondary: "#000000", accent: "#000000" }, homeLocation: "x", universe: "616" } },
   };
   return a;
