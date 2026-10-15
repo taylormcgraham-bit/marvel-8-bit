@@ -13,6 +13,16 @@ function findRoot(from: string): string {
 }
 export const ROOT = process.env.APP_ROOT ?? findRoot(path.dirname(fileURLToPath(import.meta.url)));
 
+/** Load `.env` from the project root (keys already set in the real environment win). Missing file is fine. */
+try {
+  const envFile = path.join(ROOT, ".env");
+  if (fs.existsSync(envFile)) process.loadEnvFile(envFile);
+} catch (err) {
+  console.warn(`could not read .env: ${(err as Error).message}`);
+}
+// an empty `ANTHROPIC_API_KEY=` line (the template default) means "no key", not "the key is empty"
+if (process.env.ANTHROPIC_API_KEY !== undefined && !process.env.ANTHROPIC_API_KEY.trim()) delete process.env.ANTHROPIC_API_KEY;
+
 export const CONFIG = {
   port: Number(process.env.PORT ?? 8787),
   dataDir: path.join(ROOT, "data"),

@@ -36,6 +36,8 @@ function listNotes(): { file: string; text: string }[] {
 const redirect = (res: http.ServerResponse, to: string) => { res.statusCode = 303; res.setHeader("location", to); res.end(); };
 
 const server = http.createServer(async (req, res) => {
+  // health check for hosts (Render, Fly): no password, no state
+  if (req.url === "/healthz") { res.setHeader("content-type", "text/plain"); res.end("ok"); return; }
   if (!authorized(req)) {
     res.statusCode = 401;
     res.setHeader("WWW-Authenticate", 'Basic realm="marvel-8-bit"');

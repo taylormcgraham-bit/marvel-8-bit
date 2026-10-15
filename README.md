@@ -6,12 +6,52 @@ new characters in as Editor-in-Chief, and the world stays consistent forever.
 
 Not for distribution.
 
-## Run it
+## Open the game
+
+Three ways, easiest first. Each needs the free **Node.js** (LTS) from nodejs.org once,
+except the hosted one, which needs nothing on your computer.
+
+### 1. Double-click (macOS or Windows)
+
+1. Get the repo onto your computer once: GitHub's green **Code** button, **Download ZIP**,
+   unzip it anywhere (or `git clone`). Pick this branch in the branch dropdown first.
+2. Install Node.js LTS from nodejs.org if you have not.
+3. Double-click **`Play.command`** (Mac) or **`Play.bat`** (Windows).
+
+A window opens, installs what it needs the first time, builds the game, starts it, and opens
+`http://localhost:8787` in your browser. Keep the window open while you play; close it to stop.
+The Editor's Desk and Codex are linked from the game's nav.
+
+The first launch creates a `.env` file and opens it in a text editor. Paste your Anthropic
+API key (console.anthropic.com) after `ANTHROPIC_API_KEY=`, save, close the window, and
+double-click Play again. Until then the scripted stand-in Director plays, so you can still
+look around.
+
+On a Mac, if Gatekeeper refuses the file the first time, right-click it and choose **Open**.
+
+### 2. One URL, from any device (hosted)
+
+Put it on Render.com so it has a private password-protected address you can bookmark on
+your phone. No terminal involved:
+
+1. Sign in at render.com (GitHub login), connect this repository.
+2. **New → Blueprint**, choose the repo and this branch. Render reads `render.yaml`.
+3. Fill in the two secrets it asks for: `ANTHROPIC_API_KEY` and `AUTH_PASSWORD` (any
+   password you like; the browser asks for it before showing anything).
+4. **Apply**. A few minutes later the game is at `https://marvel-8-bit.onrender.com` (or
+   whatever name you chose). Every push to the branch redeploys; the world state lives on
+   a 1 GB disk and survives deploys and restarts.
+
+The Starter plan (about $7 a month) is the smallest one that allows the persistent disk.
+The same `Dockerfile` also works on Fly.io (`fly.toml` is included) or any Docker host.
+
+### 3. Terminal
 
 ```bash
 npm install
 cp .env.example .env        # add ANTHROPIC_API_KEY, or run `ant auth login`
-npm run dev                 # engine on :8787, theater on http://localhost:5173
+npm run play                # same as the double-click launcher: build, start, open browser
+npm run dev                 # developers: engine on :8787 with hot reload, theater on :5173
 ```
 
 With no credentials the engine falls back to a scripted mock Director, so the theater
@@ -20,43 +60,21 @@ always plays something. Set `MOCK=1` to force it.
 - The main view is the **3D theater** over an open-world Manhattan. Drag to orbit, wheel to
   zoom, `Q` for the quest log, `M` to mute the score, `` ` `` for the engine console. The 2D
   pixel theater is still at `/2d.html`.
-- `http://localhost:8787/codex` is the **Codex**: characters, condition, relationships,
-  locations, factions, ledger.
-- `http://localhost:5173/?showcase&map=midtown-street&tod=day` spawns the whole roster for art review.
-- `http://localhost:8787/desk` is the **Editor's Desk**: current act and objectives, your notes
-  to the Bullpen, planned-death approvals, stage condition, roster, memory.
-- `http://localhost:8787/chronicle` is the **Chronicle**: every issue as readable comic pages.
-- Press `Q` in the theater for the quest log.
+- `/codex` is the **Codex**: characters, condition, relationships, locations, factions, ledger.
+- `/desk` is the **Editor's Desk**: current act and objectives, your notes to the Bullpen,
+  planned-death approvals, stage condition, roster requests, memory.
+- `/chronicle` is the **Chronicle**: every issue as readable comic pages.
+- `/?showcase&map=midtown-street&tod=day` spawns the whole roster for art review.
 - Notes can also be dropped as `.md` files in `inbox/` (see `inbox/README.md`).
 - `npm run validate:canon` checks every character folder against the schema.
 - `npm run reset` wipes the event log and starts the issue fresh.
 
 ## Where this lives, and what you need
 
-**Right now it is code in this GitHub repo, on the branch `claude/ai-marvel-game-concept-u7pdj9`.
-Nothing is hosted and nothing is running anywhere.** It runs on your own computer with the
-three commands above, and the browser tab is the game.
-
-You need:
-
-1. **Node.js 22 or newer** on your machine (nodejs.org).
-2. **An Anthropic API key** from console.anthropic.com, in `.env` as `ANTHROPIC_API_KEY`.
-   Without one the engine runs the scripted mock Director so you can still see the theater.
-3. **This repo cloned**, then `npm install` and `npm run dev`. Open `http://localhost:5173`.
-
-To put it online so you can open it from your phone, the repo ships a `Dockerfile` and a
-`fly.toml`. On Fly.io (or Railway, Render, any Docker host):
-
-```bash
-fly launch --copy-config --no-deploy
-fly secrets set ANTHROPIC_API_KEY=sk-ant-... AUTH_PASSWORD=choose-a-password
-fly volumes create data --size 1      # keeps the event log and clock between deploys
-fly deploy
-```
-
-`AUTH_PASSWORD` puts a browser password prompt in front of the whole thing, which is all
-the security a single-viewer private site needs. The machine stops when nobody is
-connected and starts on the next visit, which matches how the world itself works.
+The code is in this GitHub repo on the branch `claude/ai-marvel-game-concept-u7pdj9`.
+Nothing is hosted until you do step 2 above. Locally, the browser tab is the game and the
+`data/` folder next to it is the world: event log, clock, issue, memory. Back that folder up
+if you ever move computers.
 
 ## Where things live
 

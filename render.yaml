@@ -1,0 +1,24 @@
+# Render.com blueprint: hosts the game at a private URL with a password, no terminal needed.
+# New Blueprint -> pick this repo and branch -> fill in the two secrets -> Apply.
+services:
+  - type: web
+    name: marvel-8-bit
+    runtime: docker
+    plan: starter            # the smallest plan that allows a persistent disk (the world must survive restarts)
+    region: ohio
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    autoDeploy: true         # every push to the chosen branch redeploys; the world state on the disk is kept
+    disk:
+      name: data
+      mountPath: /app/data
+      sizeGB: 1
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false          # you paste it in Render's form; it is never stored in the repo
+      - key: AUTH_PASSWORD
+        sync: false          # the browser asks for this password before showing anything
+      - key: PORT
+        value: "8787"
+      - key: NODE_ENV
+        value: production

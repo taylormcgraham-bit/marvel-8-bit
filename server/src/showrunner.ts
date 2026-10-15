@@ -100,6 +100,15 @@ export class Showrunner {
 
   /* ------------------------------------------------------------------ issues */
 
+  /** Wrong key (401) or no key at all (the SDK cannot resolve an auth method): either way, play the scripted Bullpen. */
+  private noCredentials(err: unknown): boolean {
+    return err instanceof Anthropic.AuthenticationError || /resolve authentication method|api key/i.test((err as Error)?.message ?? "");
+  }
+  private fallToMock() {
+    this.log("no Anthropic credentials; switching to MOCK mode (put ANTHROPIC_API_KEY in .env and relaunch, or run `ant auth login`)");
+    this.mode = "mock";
+  }
+
   private async planIssue(number: number): Promise<IssuePlan> {
     if (this.mode === "live" && this.planner) {
       try {
@@ -107,7 +116,8 @@ export class Showrunner {
         this.log(`showrunner planned issue #${number} "${plan.title}" (cast: ${plan.cast.join(", ")})`);
         return plan;
       } catch (err) {
-        this.log(`showrunner error: ${(err as Error).message}; using scripted plan`);
+        if (this.noCredentials(err)) this.fallToMock();
+        else this.log(`showrunner error: ${(err as Error).message}; using scripted plan`);
       }
     }
     return this.mockPlanner.plan(this.world, this.memory, this.world.map, number, this.sim.describe());
@@ -330,9 +340,8 @@ export class Showrunner {
           chunk = r.chunk;
           this.log(`director(${r.model}) ${r.chunk.beats.length} beats; tokens in=${r.usage.in} out=${r.usage.out} cacheRead=${r.usage.cacheRead} cacheWrite=${r.usage.cacheWrite}`);
         } catch (err) {
-          if (err instanceof Anthropic.AuthenticationError) {
-            this.log("no valid Anthropic credentials; switching to MOCK mode (set ANTHROPIC_API_KEY or run `ant auth login`)");
-            this.mode = "mock";
+          if (this.noCredentials(err)) {
+            this.fallToMock();
             chunk = this.mockChunk();
           } else if (err instanceof Anthropic.RateLimitError) {
             this.log("rate limited; will retry shortly"); this.lastCall = Date.now() + 20_000; return;
