@@ -277,6 +277,11 @@ export class Showrunner {
     return notes;
   }
 
+  /** Editor's Desk: log a line and tell the theater. */
+  note(text: string) { this.emitNote("info", text); }
+  /** A character was approved or rejected: seed the Sim for newcomers. */
+  rosterChanged() { this.sim.init(this.world.clock.gameMs); this.sim.save(); }
+
   /** Editor's Desk actions. */
   decideDeath(status: "approved" | "vetoed") {
     this.story.decideDeath(status);

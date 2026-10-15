@@ -5,7 +5,8 @@ import { WebSocketServer, WebSocket } from "ws";
 import { ClientMsg, type ServerMsg } from "../../shared/events.js";
 import { CONFIG } from "./config.js";
 import { Showrunner } from "./showrunner.js";
-import { chroniclePage, deskPage } from "./pages.js";
+import { chroniclePage, deskPage, codexPage } from "./pages.js";
+import { RosterDrafter, draftStub, approve as approveDraft, reject as rejectDraft } from "./agents/roster.js";
 import { listCharacterIds, loadCharacter } from "./canon.js";
 import { maxHpFor } from "./world.js";
 
@@ -45,6 +46,25 @@ const server = http.createServer(async (req, res) => {
   // ---- pages
   if (url.pathname === "/chronicle") { res.setHeader("content-type", "text/html; charset=utf-8"); res.end(chroniclePage(run)); return; }
   if (url.pathname === "/desk") { res.setHeader("content-type", "text/html; charset=utf-8"); res.end(deskPage(run, listNotes())); return; }
+  if (url.pathname === "/codex") { res.setHeader("content-type", "text/html; charset=utf-8"); res.end(codexPage(run)); return; }
+  // ---- roster requests
+  if (req.method === "POST" && url.pathname === "/api/roster/request") {
+    const body = new URLSearchParams(await readBody(req));
+    const request = (body.get("request") ?? "").trim().slice(0, 200);
+    if (request) {
+      try {
+        if (run.mode === "live") { const p = await new RosterDrafter().draft(request); run.note(`drafted ${p.name} (${p.id}); awaiting approval on the Desk`); }
+        else { const p = draftStub(request); run.note(`stub draft ${p.name} (${p.id}); no model credentials, awaiting approval`); }
+      } catch (err) { run.note(`roster draft failed: ${(err as Error).message}`); }
+    }
+    redirect(res, "/desk"); return;
+  }
+  if (req.method === "POST" && (url.pathname === "/api/roster/approve" || url.pathname === "/api/roster/reject")) {
+    const body = new URLSearchParams(await readBody(req));
+    const id = path.basename(body.get("id") ?? "");
+    if (id) { const ok = url.pathname.endsWith("approve") ? approveDraft(id) : rejectDraft(id); if (ok) { run.rosterChanged(); run.note(`${url.pathname.endsWith("approve") ? "approved" : "rejected"} draft ${id}`); } }
+    redirect(res, "/desk"); return;
+  }
   // ---- Editor's Desk actions
   if (req.method === "POST" && url.pathname === "/api/notes") {
     const body = new URLSearchParams(await readBody(req));

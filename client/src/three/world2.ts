@@ -28,7 +28,7 @@ const T = {
   windows: () => tex("windows", () => canvasTexture(64, 128, (ctx) => { ctx.fillStyle = "#101a30"; ctx.fillRect(0, 0, 64, 128); for (let y = 6; y < 128; y += 14) for (let x = 6; x < 64; x += 14) { let h = (x * 31 + y * 17) % 7; ctx.fillStyle = h > 3 ? "#ffd880" : h > 1 ? "#3a5a8a" : "#101a30"; ctx.fillRect(x, y, 8, 8); } })),
   banner: (hex: string) => tex("banner" + hex, () => canvasTexture(64, 128, (ctx) => { ctx.fillStyle = hex; ctx.fillRect(0, 0, 64, 128); ctx.fillStyle = "#c0a040"; ctx.fillRect(0, 0, 64, 6); ctx.fillStyle = "#9a9aaa"; ctx.fillRect(18, 34, 28, 40); ctx.fillStyle = "#101014"; ctx.fillRect(23, 44, 8, 6); ctx.fillRect(33, 44, 8, 6); ctx.fillRect(24, 60, 16, 4); })),
 };
-function tiled(t: THREE.CanvasTexture, rx: number, ry: number) { const c = t.clone(); c.repeat.set(rx, ry); c.needsUpdate = true; return c; }
+function tiled(t: THREE.Texture, rx: number, ry: number) { const c = t.clone(); c.repeat.set(rx, ry); c.needsUpdate = true; return c; }
 
 /* ------------------------------------------------------------------ tiles */
 interface TileSpec { h: number; top: THREE.Texture | string; side?: string; emissive?: number }
@@ -168,9 +168,10 @@ export function buildBackdrop(map: MapDef, tod: string, center: THREE.Vector3): 
     if (night) { const moon = new THREE.Mesh(new THREE.SphereGeometry(2.2, 16, 12), new THREE.MeshBasicMaterial({ color: 0xf0f0ff })); moon.position.set(center.x - 30, 28, center.z - 40); g.add(moon); }
   }
   if (map.region === "manhattan" && map.kind !== "interior") {
-    for (let i = 0; i < 40; i++) {
-      const ang = (i / 40) * Math.PI * 2 + 0.1; const rad = 18 + (i % 4) * 6 + (i % 3) * 2;
-      const w = 2.5 + (i * 7) % 4, d = 2.5 + (i * 5) % 3, h = 3 + (i * 11) % 12;
+    for (let i = 0; i < 56; i++) {
+      // keep the skyline outside the placed blocks (the composite spans roughly 48 x 40 tiles)
+      const ang = (i / 56) * Math.PI * 2 + 0.1; const rad = 42 + (i % 4) * 7 + (i % 3) * 3;
+      const w = 4 + (i * 7) % 6, d = 4 + (i * 5) % 5, h = 6 + (i * 11) % 26;
       const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshToonMaterial({ map: tiled(T.windows(), Math.ceil(w), Math.ceil(h / 2)), gradientMap: toon("#ffffff").gradientMap, color: new THREE.Color(night ? 0x5a6a90 : 0x8a90a8), emissive: new THREE.Color(night ? 0x303848 : 0x101418) }));
       b.position.set(center.x + Math.cos(ang) * rad, h / 2 - 3.2, center.z + Math.sin(ang) * rad); g.add(b);
       if (i % 5 === 0) { const spire = new THREE.Mesh(new THREE.ConeGeometry(0.3, 2, 6), toon("#9a9aaa")); spire.position.set(b.position.x, h - 2.2, b.position.z); g.add(spire); }
@@ -181,4 +182,73 @@ export function buildBackdrop(map: MapDef, tod: string, center: THREE.Vector3): 
   }
   if (tod === "day" || tod === "dusk") { const cloudTex = canvasTexture(128, 64, (ctx) => { for (const [x, y, r] of [[40, 36, 22], [64, 28, 26], [90, 36, 20], [60, 42, 18]] as [number, number, number][]) { const gr = ctx.createRadialGradient(x, y, 2, x, y, r); gr.addColorStop(0, "rgba(255,255,255,0.95)"); gr.addColorStop(1, "rgba(255,255,255,0)"); ctx.fillStyle = gr; ctx.fillRect(0, 0, 128, 64); } }); for (let i = 0; i < 8; i++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: cloudTex, transparent: true, opacity: 0.85, depthWrite: false })); s.scale.set(16, 8, 1); s.position.set(center.x + (i - 4) * 14, 22 + (i % 3) * 3, center.z - 40 + (i % 2) * 20); s.name = "cloud"; g.add(s); } }
   return g;
+}
+
+/* ------------------------------------------------------------------ open world: a region as one scene */
+import { MAPS, PLACEMENTS, CONNECTORS, type Region } from "@shared/maps";
+
+export interface BuiltRegion {
+  group: THREE.Group;
+  region: Region;
+  maps: Record<string, Built3D>;
+  lights: THREE.PointLight[];
+  flames: THREE.Sprite[];
+  /** world position for a tile on a given map */
+  toWorld(mapId: string, tx: number, ty: number): THREE.Vector3;
+  floorY(mapId: string, tx: number, ty: number): number;
+  /** ground-level point under a map's edge facing another map, for travel paths */
+  exitPoint(mapId: string, towardMapId: string): THREE.Vector3;
+  center(mapId: string): THREE.Vector3;
+}
+
+export function buildRegion(region: Region, night: boolean): BuiltRegion {
+  const g = new THREE.Group();
+  const maps: Record<string, Built3D> = {};
+  const lights: THREE.PointLight[] = [];
+  const flames: THREE.Sprite[] = [];
+  const windowsTex = T.windows();
+  for (const m of Object.values(MAPS)) {
+    if (m.region !== region) continue;
+    const p = PLACEMENTS[m.id] ?? { x: 0, y: 0, elevation: 0 };
+    const built = buildWorld(m, night);
+    built.group.position.set(p.x, p.elevation, p.y);
+    g.add(built.group); maps[m.id] = built; lights.push(...built.lights); flames.push(...built.flames);
+    if (p.elevation > 0) {
+      // the building under an elevated map
+      const w = m.width, d = m.height, h = p.elevation;
+      const glass = p.body === "glass";
+      const mat = glass
+        ? new THREE.MeshToonMaterial({ color: new THREE.Color(night ? 0x3a4a80 : 0x6a8ac0), map: tiled(windowsTex, w, h / 2), gradientMap: toon("#ffffff").gradientMap, emissive: new THREE.Color(night ? 0x203050 : 0x101820) })
+        : new THREE.MeshToonMaterial({ map: tiled(T.facade(), w / 2, h / 2.6), gradientMap: toon("#ffffff").gradientMap });
+      const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), [mat, mat, lam("#4a4a56"), lam("#2a2a34"), mat, mat]);
+      body.position.set(p.x + w / 2 - 0.5, h / 2 - 0.02, p.y + d / 2 - 0.5); body.castShadow = true; body.receiveShadow = true; g.add(body);
+      if (glass) { const crown = new THREE.Mesh(new THREE.BoxGeometry(w + 0.6, 0.4, d + 0.6), lam("#9aa0b8")); crown.position.set(body.position.x, h + 0.1, body.position.z); g.add(crown); const spire = new THREE.Mesh(new THREE.ConeGeometry(0.4, 4, 8), lam("#c0c8e0")); spire.position.set(p.x + w - 2, h + 2.2, p.y + 1); g.add(spire); const sign = new THREE.Mesh(new THREE.BoxGeometry(2.2, 2.2, 0.2), toon("#48b8ff", { emissive: night ? 1.2 : 0.3 })); sign.position.set(body.position.x, h - 2, p.y + d - 0.4 + 0.11); g.add(sign); const a = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.8), new THREE.MeshToonMaterial({ map: tex("aLogo", () => canvasTexture(128, 128, (ctx) => { ctx.fillStyle = "#48b8ff"; ctx.fillRect(0, 0, 128, 128); ctx.fillStyle = "#ffffff"; ctx.font = "bold 110px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("A", 64, 70); })), gradientMap: toon("#ffffff").gradientMap })); a.position.set(body.position.x, h - 2, p.y + d - 0.4 + 0.22); g.add(a); }
+      else { const ledge = new THREE.Mesh(new THREE.BoxGeometry(w + 0.4, 0.3, d + 0.4), lam("#8a5a46")); ledge.position.set(body.position.x, h - 0.15, body.position.z); g.add(ledge); }
+    }
+  }
+  // connectors
+  for (const c of CONNECTORS[region]) {
+    const spec = SPEC[c.tile]?.() ?? { h: 0.05, top: "#555" };
+    const mat = typeof spec.top === "string" ? toon(spec.top) : new THREE.MeshToonMaterial({ map: tiled(spec.top, c.w, c.h), gradientMap: toon("#ffffff").gradientMap });
+    const h = Math.max(0.04, spec.h);
+    const m = new THREE.Mesh(new THREE.BoxGeometry(c.w, h, c.h), [lam(spec.side ?? "#555"), lam(spec.side ?? "#555"), mat, lam(spec.side ?? "#555"), lam(spec.side ?? "#555"), lam(spec.side ?? "#555")]);
+    m.position.set(c.x + c.w / 2 - 0.5, h / 2, c.y + c.h / 2 - 0.5); m.receiveShadow = true; g.add(m);
+    if (c.tile === "road-line") { for (let i = 0; i < Math.max(c.w, c.h); i += 2) { const line = new THREE.Mesh(new THREE.PlaneGeometry(c.w > c.h ? 0.8 : 0.14, c.w > c.h ? 0.14 : 0.8), lam("#e0c050")); line.rotation.x = -Math.PI / 2; line.position.set(c.w > c.h ? c.x + i : c.x, 0.04, c.w > c.h ? c.y : c.y + i); g.add(line); } }
+    if (c.tile === "sidewalk" && (c.w >= 10 || c.h >= 10)) { for (let i = 2; i < Math.max(c.w, c.h); i += 6) { const grp = new THREE.Group(); const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.06, 2.2, 8), lam("#2a3a2a")); pole.position.y = 1.1; grp.add(pole); const globe = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 8), toon("#ffe8a0", { emissive: night ? 2.5 : 0.5 })); globe.position.y = 2.2; grp.add(globe); grp.position.set(c.w > c.h ? c.x + i : c.x, 0.1, c.w > c.h ? c.y : c.y + i); g.add(grp); const l = new THREE.PointLight(0xffd080, night ? 1.6 : 0.2, 5, 1.6); l.position.set(grp.position.x, 2.1, grp.position.z); g.add(l); lights.push(l); } }
+  }
+  // ground plane far out so the city has a floor
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(160, 160), toon(region === "latveria" ? "#2a2a36" : "#2a2a30"));
+  ground.rotation.x = -Math.PI / 2; ground.position.set(20, -0.03, 15); ground.receiveShadow = true; g.add(ground);
+
+  const toWorld = (mapId: string, tx: number, ty: number) => { const p = PLACEMENTS[mapId] ?? { x: 0, y: 0, elevation: 0 }; const b = maps[mapId]; return new THREE.Vector3(p.x + tx, p.elevation + (b ? b.floorY(tx, ty) : 0.1), p.y + ty); };
+  const floorY = (mapId: string, tx: number, ty: number) => { const p = PLACEMENTS[mapId] ?? { x: 0, y: 0, elevation: 0 }; const b = maps[mapId]; return p.elevation + (b ? b.floorY(tx, ty) : 0.1); };
+  const center = (mapId: string) => { const m = MAPS[mapId]; const p = PLACEMENTS[mapId] ?? { x: 0, y: 0, elevation: 0 }; return new THREE.Vector3(p.x + (m?.width ?? 20) / 2 - 0.5, p.elevation, p.y + (m?.height ?? 15) / 2 - 0.5); };
+  const exitPoint = (mapId: string, towardMapId: string) => {
+    const a = center(mapId), b = center(towardMapId); const m = MAPS[mapId]!;
+    const dx = b.x - a.x, dz = b.z - a.z;
+    const p = a.clone();
+    if (Math.abs(dx) > Math.abs(dz)) p.x += Math.sign(dx) * (m.width / 2 + 1.5); else p.z += Math.sign(dz) * (m.height / 2 + 1.5);
+    p.y = 0.1; return p;
+  };
+  return { group: g, region, maps, lights, flames, toWorld, floorY, exitPoint, center };
 }

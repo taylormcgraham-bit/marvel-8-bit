@@ -208,3 +208,40 @@ export function travelMinutes(from: string, to: string): number {
   if (far.has("latveria") || far.has("wakanda")) return 180; // Quinjet
   return 60;
 }
+
+/* ----------------------------------------------------------------- open world layout */
+
+/** Where a map sits in its region's continuous world, in world tiles, and how high. */
+export interface Placement { x: number; y: number; elevation: number; /** building body under the map, if elevated */ body?: "brick" | "glass" }
+export const PLACEMENTS: Record<string, Placement> = {
+  "midtown-street": { x: 0, y: 0, elevation: 0 },
+  "chelsea-rooftop": { x: 0, y: 23, elevation: 6, body: "brick" },
+  "avengers-lounge": { x: 27, y: 0, elevation: 12, body: "glass" },
+  "castle-doom": { x: 0, y: 0, elevation: 0 },
+};
+
+/** Connector tiles between placed maps (world coords): avenues, sidewalks, plazas. */
+export interface Connector { x: number; y: number; w: number; h: number; tile: Tile }
+export const CONNECTORS: Record<Region, Connector[]> = {
+  manhattan: [
+    // avenue south of Midtown down to the Chelsea block
+    { x: 0, y: 15, w: 20, h: 1, tile: "sidewalk" }, { x: 0, y: 16, w: 20, h: 6, tile: "road" }, { x: 0, y: 22, w: 20, h: 1, tile: "sidewalk" },
+    { x: 0, y: 18, w: 20, h: 1, tile: "road-line" },
+    // cross street east of Midtown to the tower plaza
+    { x: 20, y: 0, w: 1, h: 15, tile: "sidewalk" }, { x: 21, y: 0, w: 5, h: 15, tile: "road" }, { x: 23, y: 0, w: 1, h: 15, tile: "road-line" }, { x: 26, y: 0, w: 1, h: 15, tile: "sidewalk" },
+    // the block east of the avenue, south-east corner
+    { x: 20, y: 15, w: 27, h: 8, tile: "road" }, { x: 20, y: 18, w: 27, h: 1, tile: "road-line" },
+    // plaza around the tower footprint (the lounge map sits on top of the tower)
+    { x: 27, y: 15, w: 20, h: 8, tile: "sidewalk" },
+  ],
+  latveria: [], asgard: [], wakanda: [],
+};
+
+/** Region-level flavor the theater uses for backdrops and travel styles. */
+export function regionOf(mapId: string): Region { return MAPS[mapId]?.region ?? "manhattan"; }
+
+/** World-space center of a placed map. */
+export function placedCenter(mapId: string): { x: number; y: number; elevation: number } {
+  const m = MAPS[mapId]; const p = PLACEMENTS[mapId] ?? { x: 0, y: 0, elevation: 0 };
+  return { x: p.x + (m?.width ?? 20) / 2 - 0.5, y: p.y + (m?.height ?? 15) / 2 - 0.5, elevation: p.elevation };
+}

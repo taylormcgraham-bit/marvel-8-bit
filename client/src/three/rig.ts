@@ -215,6 +215,8 @@ export function makeRig(id: string, pal: Palette, lookIn: Partial<Look> | undefi
   if (look.props.includes("satchel")) { const s = rbox(0.14, 0.12, 0.08, toon("#6a4a2a"), 0.03); s.position.set(P.torsoW / 2 + 0.02, hipY + 0.1, 0.1); g.add(s); }
 
   const height = headY + P.head;
+  // everything animates on an inner body group so the root keeps its world position
+  const body = new THREE.Group(); body.add(...g.children); g.add(body);
   let koApplied = false;
   const rig: Rig = {
     group: g, height,
@@ -222,30 +224,30 @@ export function makeRig(id: string, pal: Palette, lookIn: Partial<Look> | undefi
     setPose(pose, t, strength = 1) {
       const sw = Math.sin(t * 9);
       if (pose === "ko") {
-        if (!koApplied) { g.rotation.z = Math.PI / 2 * 0.98; g.position.y = 0.25; koApplied = true; }
+        if (!koApplied) { body.rotation.z = Math.PI / 2 * 0.98; body.position.y = 0.25; koApplied = true; }
         return;
       }
-      if (koApplied) { g.rotation.z = 0; g.position.y = 0; koApplied = false; }
+      if (koApplied) { body.rotation.z = 0; body.position.y = 0; koApplied = false; }
       switch (pose) {
         case "walk":
           lHip.rotation.x = sw * 0.7 * strength; rHip.rotation.x = -sw * 0.7 * strength;
           lSh.rotation.x = -sw * 0.6 * strength; rSh.rotation.x = sw * 0.6 * strength;
-          g.position.y = Math.abs(sw) * 0.025; torso.rotation.y = sw * 0.06; headGroup.rotation.y = -sw * 0.04;
+          body.position.y = Math.abs(sw) * 0.025; torso.rotation.y = sw * 0.06; headGroup.rotation.y = -sw * 0.04;
           break;
         case "idle":
           lHip.rotation.x = 0; rHip.rotation.x = 0;
           lSh.rotation.x = Math.sin(t * 1.6) * 0.06; rSh.rotation.x = -Math.sin(t * 1.6) * 0.06; lSh.rotation.z = 0.08; rSh.rotation.z = -0.08;
-          g.position.y = 0; torso.rotation.y = 0; torso.position.y = chestY + Math.sin(t * 1.6) * 0.008; headGroup.rotation.y = Math.sin(t * 0.6) * 0.18; headGroup.rotation.x = Math.sin(t * 0.9) * 0.04;
+          body.position.y = 0; torso.rotation.y = 0; torso.position.y = chestY + Math.sin(t * 1.6) * 0.008; headGroup.rotation.y = Math.sin(t * 0.6) * 0.18; headGroup.rotation.x = Math.sin(t * 0.9) * 0.04;
           break;
         case "attack": {
           const k = Math.min(1, strength);
           rSh.rotation.x = -2.2 * k; rSh.rotation.z = -0.15; lSh.rotation.x = 0.6 * k; torso.rotation.y = -0.5 * k; headGroup.rotation.y = 0.3 * k;
-          lHip.rotation.x = 0.4 * k; rHip.rotation.x = -0.3 * k; g.position.y = 0;
+          lHip.rotation.x = 0.4 * k; rHip.rotation.x = -0.3 * k; body.position.y = 0;
           break;
         }
         case "hurt": {
           const k = Math.min(1, strength);
-          torso.rotation.x = -0.35 * k; headGroup.rotation.x = -0.3 * k; lSh.rotation.x = -1.2 * k; rSh.rotation.x = -1.2 * k; lSh.rotation.z = 0.6 * k; rSh.rotation.z = -0.6 * k; g.position.y = 0;
+          torso.rotation.x = -0.35 * k; headGroup.rotation.x = -0.3 * k; lSh.rotation.x = -1.2 * k; rSh.rotation.x = -1.2 * k; lSh.rotation.z = 0.6 * k; rSh.rotation.z = -0.6 * k; body.position.y = 0;
           break;
         }
       }

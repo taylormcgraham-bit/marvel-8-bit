@@ -40,7 +40,9 @@ export class Overlay {
   toggleConsole() { this.consoleEl.hidden = !this.consoleEl.hidden; }
   log(level: string, text: string) { const d = document.createElement("div"); d.className = level; d.textContent = `${new Date().toLocaleTimeString()}  ${text}`; this.consoleEl.appendChild(d); while (this.consoleEl.childElementCount > 200) this.consoleEl.firstChild?.remove(); this.consoleEl.scrollTop = this.consoleEl.scrollHeight; }
 
-  async say(name: string, portrait: HTMLCanvasElement | null, text: string, mood: string, ms: number) {
+  setSoundHint(on: boolean) { let h = this.root.querySelector(".ov-sound") as HTMLDivElement | null; if (!h) { h = document.createElement("div"); h.className = "ov-sound"; h.textContent = "CLICK OR PRESS A KEY FOR SOUND · M MUTES"; this.root.appendChild(h); } h.style.display = on ? "block" : "none"; }
+
+  async say(name: string, portrait: HTMLCanvasElement | null, text: string, mood: string, ms: number, onChar?: () => void) {
     const d = this.dialog; d.classList.add("on"); d.dataset.mood = mood;
     const port = d.querySelector(".ov-portrait")!; port.innerHTML = ""; if (portrait) port.appendChild(portrait);
     d.querySelector(".ov-name")!.textContent = name.toUpperCase();
@@ -48,7 +50,7 @@ export class Overlay {
     const chars = [...text]; const per = Math.min(40, Math.max(14, (ms - 900) / chars.length));
     const start = performance.now();
     let i = 0;
-    const typer = setInterval(() => { i++; t.textContent = chars.slice(0, i).join(""); if (i >= chars.length) { clearInterval(typer); (d.querySelector(".ov-cursor") as HTMLElement).style.visibility = "visible"; } }, per);
+    const typer = setInterval(() => { i++; t.textContent = chars.slice(0, i).join(""); if (onChar && i % 2 === 0) onChar(); if (i >= chars.length) { clearInterval(typer); (d.querySelector(".ov-cursor") as HTMLElement).style.visibility = "visible"; } }, per);
     await wait(Math.max(0, ms - (performance.now() - start)));
     clearInterval(typer); d.classList.remove("on");
   }
@@ -147,5 +149,6 @@ export const OVERLAY_CSS = `
 .ov .ov-recap .r0{font-size:13px;color:#ffd860;margin-bottom:14px}.ov .ov-recap .r1{font-size:9px;line-height:1.8;opacity:0;animation:fadein .4s forwards}@keyframes fadein{to{opacity:1}}
 .ov .ov-float{position:absolute;transform:translate(-50%,-100%);font-size:11px;text-shadow:2px 2px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000;white-space:nowrap}.ov .ov-float.big{font-size:16px}.ov .ov-float.speech{font-size:9px;color:#fff;background:rgba(0,0,0,.55);padding:4px 8px;border-radius:3px;white-space:normal;max-width:180px;text-align:center}
 .ov .ov-console{position:absolute;left:0;bottom:0;width:100%;max-height:40vh;margin:0;overflow:auto;background:rgba(0,0,0,.85);color:#c8c8c8;font:11px/1.5 monospace;padding:8px 12px;box-sizing:border-box;border-top:2px solid #3a3a5a;pointer-events:auto}
+.ov .ov-sound{position:absolute;bottom:10px;left:16px;font-size:8px;color:#8a8aa8;text-shadow:0 2px 0 #000}
 .ov .ov-console .reject{color:#ff7a7a}.ov .ov-console .warn{color:#ffd37a}.ov .ov-console .info{color:#8fd3ff}
 `;

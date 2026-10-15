@@ -17,8 +17,11 @@ npm run dev                 # engine on :8787, theater on http://localhost:5173
 With no credentials the engine falls back to a scripted mock Director, so the theater
 always plays something. Set `MOCK=1` to force it.
 
-- The main view is the **3D theater**. Drag to orbit, wheel to zoom, `Q` for the quest log,
-  `` ` `` for the engine console. The 2D pixel theater is still at `/2d.html`.
+- The main view is the **3D theater** over an open-world Manhattan. Drag to orbit, wheel to
+  zoom, `Q` for the quest log, `M` to mute the score, `` ` `` for the engine console. The 2D
+  pixel theater is still at `/2d.html`.
+- `http://localhost:8787/codex` is the **Codex**: characters, condition, relationships,
+  locations, factions, ledger.
 - `http://localhost:5173/?showcase&map=midtown-street&tod=day` spawns the whole roster for art review.
 - `http://localhost:8787/desk` is the **Editor's Desk**: current act and objectives, your notes
   to the Bullpen, planned-death approvals, stage condition, roster, memory.
@@ -91,12 +94,12 @@ Generation only happens while a theater is connected and its playback buffer is 
 
 ## Status
 
-Phases 0 to 4 are done: canon for the launch roster; one rooftop map with the live Director
+All five phases of the roadmap are done: canon for the launch roster; one rooftop map with the live Director
 and prompt-cached bibles; fights run in rounds by the Tactician with stamina, injuries that
 persist and heal over game time, and enforced resources; issues planned by the Showrunner as
 three-act arcs with objectives, closed by the Archivist into a Chronicle and long-term
-memory; the Editor's Desk; four locations with travel between them; a world sim with
-weather, villain scheme meters and faction standings; off-panel catch-up with a recap card
-when you return; a world that replays its event log on restart; procedural block-style art
-with a drop-in pipeline for hand-drawn sheets. Next: Phase 5 (polish: codex, cinematic
-camera, chiptune score, roster requests). See `docs/DESIGN.md`.
+memory; the Editor's Desk with roster requests; an open-world Manhattan plus Latveria with
+visible travel; a world sim with weather, villain scheme meters and faction standings;
+off-panel catch-up with a recap card; a Codex; a chiptune score with leitmotifs; a world
+that replays its event log on restart; a real-time 3D theater with stylized characters and
+a directed camera. See `docs/DESIGN.md` for the full design and what each phase added.

@@ -6,6 +6,8 @@ import type { Showrunner } from "./showrunner.js";
 import { listCharacterIds, loadCharacter } from "./canon.js";
 import { MAPS } from "../../shared/maps.js";
 import { standingWord } from "./sim.js";
+import { listPending } from "./agents/roster.js";
+import { loadWorldDoc } from "./canon.js";
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
 
@@ -36,7 +38,7 @@ const page = (title: string, body: string, nav: string) => `<!doctype html><html
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet"><style>${CSS}</style></head>
 <body><header><h1>MARVEL 8-BIT</h1>${nav}</header><main>${body}</main></body></html>`;
 
-const NAV = `<a href="/">Theater</a> <a href="/chronicle">Chronicle</a> <a href="/desk">Editor's Desk</a>`;
+const NAV = `<a href="/">Theater</a> <a href="/chronicle">Chronicle</a> <a href="/codex">Codex</a> <a href="/desk">Editor's Desk</a>`;
 
 function transcriptHtml(lines: string[]): string {
   return lines.map((l) => {
@@ -89,8 +91,46 @@ export function deskPage(run: Showrunner, notes: { file: string; text: string }[
   const notesHtml = `<div class="card"><h2>Notes to the Bullpen</h2><p class="muted small">The Showrunner reads these when planning the next issue; the Director reads them every scene. Woven in, never obeyed literally.</p>
     ${notes.map((n) => `<div class="panel note"><div>${esc(n.text)}</div><form method="post" action="/api/notes/delete"><input type="hidden" name="file" value="${esc(n.file)}"><button class="quiet">×</button></form></div>`).join("") || "<p class='muted'>No notes.</p>"}
     <form method="post" action="/api/notes"><textarea name="text" rows="3" placeholder="e.g. I'd love to see more of Daredevil and Spidey as friends. Or: bring in Doctor Doom next."></textarea><button>Add note</button></form></div>`;
-  const roster = `<div class="card"><h2>Roster</h2><p class="small">${listCharacterIds().map((id) => { const c = loadCharacter(id)!; return `<span class="panel" style="display:inline-block;margin:3px">${esc(c.stats.name)} <span class="muted">${c.stats.role}</span></span>`; }).join(" ")}</p>
-    <p class="muted small">To add a character: write a bible and stats.json under canon/characters/&lt;id&gt;/ (docs/DESIGN.md §6) and the Showrunner can cast them.</p></div>`;
+  const pending = listPending();
+  const roster = `<div class="card"><h2>Roster</h2><p class="small">${listCharacterIds().map((id) => { const c = loadCharacter(id)!; return `<a class="panel" style="display:inline-block;margin:3px;color:inherit;text-decoration:none" href="/codex#${id}">${esc(c.stats.name)} <span class="muted">${c.stats.role}</span></a>`; }).join(" ")}</p>
+    ${pending.length ? `<h3>Drafts awaiting your approval</h3>${pending.map((p) => `<div class="panel note"><div><b>${esc(p.name)}</b> <span class="muted small">(${esc(p.requestedAs)}${p.mode === "stub" ? ", STUB: no model credentials" : ""})</span> · <a href="/codex#${esc(p.id)}" style="color:var(--blue)">read the draft</a></div><div><form method="post" action="/api/roster/approve" style="display:inline"><input type="hidden" name="id" value="${esc(p.id)}"><button>Approve</button></form><form method="post" action="/api/roster/reject" style="display:inline"><input type="hidden" name="id" value="${esc(p.id)}"><button class="quiet">Reject</button></form></div></div>`).join("")}` : ""}
+    <h3>Request a character</h3><form method="post" action="/api/roster/request"><input name="request" placeholder="e.g. Moon Knight, or: Miles Morales from Earth-1610"><button>Draft a bible</button></form>
+    <p class="muted small">The Archivist drafts a full bible and stats in the house format from canon. You read it on the Codex page, then approve or reject. Approved characters can be cast by the Showrunner from the next issue.</p></div>`;
   const memory = `<div class="card"><h2>Memory</h2><pre class="small" style="white-space:pre-wrap">${esc(run.memory.describe())}</pre></div>`;
   return page("Editor's Desk", issue + death + stage + sim + notesHtml + roster + memory, NAV);
+}
+
+
+export function codexPage(run: Showrunner): string {
+  const ids = [...listCharacterIds(), ...listPending().map((p) => p.id)];
+  const pendingIds = new Set(listPending().map((p) => p.id));
+  const section = (b: string, n: number) => { const m = new RegExp(`## ${n}\\.[^\\n]*\\n([\\s\\S]*?)(?=\\n## |$)`).exec(b); return m ? m[1]!.trim() : ""; };
+  const md = (t: string) => esc(t).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/`(.+?)`/g, "<code>$1</code>").replace(/\n\n/g, "<br><br>").replace(/\n- /g, "<br>· ");
+  const chars = ids.map((id) => {
+    const c = loadCharacter(id); if (!c) return "";
+    const a = run.world.actors.get(id);
+    const st = run.sim.factions[id];
+    const rel = run.memory.relationships.filter((r) => r.a === id || r.b === id);
+    const facts = run.memory.facts.filter((f) => f.who === id);
+    const dead = run.world.deceased.has(id);
+    const status = dead ? "deceased" : a ? `on stage at ${esc(MAPS[a.location]?.name ?? a.location)}, HP ${a.hp}/${a.maxHp}${a.injuries.length ? ", " + a.injuries.map((i) => esc(i.name)).join(", ") : ""}` : `last seen: ${esc(MAPS[run.sim.whereabouts[id] ?? ""]?.name ?? run.sim.whereabouts[id] ?? "unknown")}`;
+    return `<div class="card" id="${esc(id)}"><h2>${esc(c.stats.name)}${pendingIds.has(id) ? ' <span class="muted">(draft, pending approval)</span>' : ""}</h2>
+      <p class="muted small">${esc(c.stats.civilianName ?? "")} · ${c.stats.role} · ${c.stats.tier} tier · INT ${c.stats.grid.int} STR ${c.stats.grid.str} SPD ${c.stats.grid.spd} DUR ${c.stats.grid.dur} NRG ${c.stats.grid.nrg} FGT ${c.stats.grid.fgt}</p>
+      <p><b>Status:</b> ${status}</p>
+      <div class="row"><div><h3>Who they are</h3><p class="small">${md(section(c.bible, 1))}</p></div><div><h3>Weaknesses</h3><p class="small">${md(section(c.bible, 4).slice(0, 900))}</p></div></div>
+      ${c.stats.role === "villain" && run.sim.schemes[id] !== undefined ? `<p class="small"><b>Scheme meter:</b> ${Math.round(run.sim.schemes[id]!)}%</p>` : ""}
+      ${st && Object.keys(st).length ? `<p class="small"><b>Standings:</b> ${Object.entries(st).map(([k, v]) => `${esc(k)} ${Math.round(v ?? 0)} (${standingWord(v ?? 0)})`).join(" · ")}</p>` : ""}
+      ${rel.length ? `<h3>Relationships (this world)</h3><ul class="small">${rel.map((r) => `<li>${esc(run.world.nameOf(r.a === id ? r.b : r.a))}: ${r.temperature >= 0 ? "+" : ""}${r.temperature}, ${esc(r.note)}</li>`).join("")}</ul>` : ""}
+      ${facts.length ? `<h3>Knows (learned on-panel)</h3><ul class="small">${facts.map((f) => `<li>${esc(f.fact)} <span class="muted">(issue ${f.issue})</span></li>`).join("")}</ul>` : ""}
+      <details><summary class="muted">Moves</summary><ul class="small">${c.stats.moves.map((m) => `<li><b>${esc(m.name)}</b> <span class="muted">${m.kind}, power ${m.power}${m.cost ? ", " + esc(m.cost) : ""}</span>: ${esc(m.description)}</li>`).join("")}</ul></details>
+      <details><summary class="muted">Full bible</summary><pre class="small" style="white-space:pre-wrap">${esc(c.bible)}</pre></details></div>`;
+  }).join("");
+  const locs = Object.values(MAPS).map((m) => { const present = [...run.world.actors.values()].filter((a) => a.location === m.id).map((a) => esc(a.name)); return `<div class="panel"><b>${esc(m.name)}</b> <span class="muted small">${m.kind}, ${m.region}${m.publicSpace ? ", public" : ""}</span><div class="small">${esc(m.flavor)}</div>${present.length ? `<div class="small muted">Here now: ${present.join(", ")}</div>` : ""}</div>`; }).join("");
+  const worldDoc = loadWorldDoc("locations.md");
+  const factions = loadWorldDoc("factions.md");
+  const ledger = run.memory.ledger.length ? `<div class="card"><h2>Deaths and Returns</h2><ul>${run.memory.ledger.map((l) => `<li>${esc(l.kind)}: <b>${esc(run.world.nameOf(l.who))}</b>, issue ${l.issue}, ${esc(l.how)}</li>`).join("")}</ul></div>` : "";
+  const threads = run.memory.threads.length ? `<div class="card"><h2>Unresolved threads</h2><ul>${run.memory.threads.map((t) => `<li>${esc(t)}</li>`).join("")}</ul></div>` : "";
+  return page("Codex", `<div class="card"><h2>Codex</h2><p class="small muted">Everything the world knows about itself: characters with their current condition and what they have learned, locations, factions, the ledger. Canon from the bibles; state from the engine.</p>
+    <p class="small">${ids.map((id) => `<a href="#${esc(id)}" style="color:var(--blue)">${esc(loadCharacter(id)?.stats.name ?? id)}</a>`).join(" · ")}</p></div>` + chars + `<div class="card"><h2>Locations</h2>${locs}<details><summary class="muted">World atlas (canon/world/locations.md)</summary><pre class="small" style="white-space:pre-wrap">${esc(worldDoc)}</pre></details></div>
+    <div class="card"><h2>Factions</h2><details open><summary class="muted">canon/world/factions.md</summary><pre class="small" style="white-space:pre-wrap">${esc(factions)}</pre></details></div>` + threads + ledger, NAV);
 }

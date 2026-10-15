@@ -249,7 +249,7 @@ boss arena).
 | **2. Game** ✅ | Combat Engine, Tactician, stats, HP, injuries, on-map fights, HUD. | A fight looks and feels like a game, outcomes persist. |
 | **3. Story** ✅ | Showrunner, arcs as issues, quest log, title cards, Chronicle, Editor's Desk. | A full 3-act issue plays start to finish and your notes shape the next one. |
 | **4. World** ✅ | More districts and realms, World Sim (clock, weather, schedules, scheme meters), factions, Off-Panel Catch-Up and recaps. | You can close it for a day and come back to a living world. |
-| **5. Polish** | Codex, cinematic camera, chiptune score, portraits, roster-request pipeline. | It feels like a PS5 game wearing an NES costume. |
+| **5. Polish** ✅ | Codex, cinematic camera, chiptune score, portraits, roster-request pipeline. | It feels like a PS5 game wearing an NES costume. |
 
 ---
 
@@ -341,6 +341,32 @@ boss arena).
   catch-up agent in live mode, mechanical lines otherwise). Then the scene resumes.
 - **Theater**: skies by time of day, mountains for Latveria, interiors without sky,
   torch and lamp light, rain, snow, fog and storm effects, fades on travel.
+
+### Open world and Phase 5 notes
+
+- **Open world.** Manhattan is one continuous scene: Midtown at ground level, the Chelsea
+  block with its rooftop six stories up, Avengers Tower with the lounge on top, avenues and
+  a plaza connecting them (`PLACEMENTS` and `CONNECTORS` in `shared/maps.ts`). Travel is
+  visible: Spider-Man swings, flyers fly, everyone else runs, and the camera follows. Latveria
+  is its own region reached by a fade (Quinjet). Characters not on stage stay visible where
+  they are. The engine is unchanged; the theater decides how to show a `travel` event.
+- **Codex** (`/codex`): every character with canon summary and weaknesses, current condition,
+  standings, relationships and facts learned in this world, moves and the full bible;
+  locations with who is there now; factions; threads; the Deaths and Returns ledger.
+- **Camera direction**: eases toward whoever is acting, frames fights tighter, shakes on
+  hits, pulls wide for scene changes and title cards, slow orbit when idle, follows travel.
+- **Score and sound** (`client/src/three/audio.ts`, Web Audio): a chiptune sequencer with
+  moods per location (rooftop, street, lounge, castle) and situation (fight, title, quiet),
+  a leitmotif sting per character on entrances and heated lines, hit and miss effects,
+  typewriter blips, stings for fights, knockouts, objectives, acts and recaps. Starts on the
+  first click or key; M mutes.
+- **Portraits** are rendered from the 3D rig's head at spawn, so dialogue portraits match
+  the character on stage.
+- **Roster requests** (`/desk`): "Draft a bible" sends the request to the Archivist, which
+  writes a full bible and stats in the house format into `canon/characters/<id>/` with a
+  pending marker; the draft is readable on the Codex; approve adds the character to the
+  roster for the Showrunner to cast, reject deletes the folder. Without credentials a
+  clearly labeled stub exercises the flow.
 
 ## 13. Open questions
 

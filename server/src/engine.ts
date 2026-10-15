@@ -69,7 +69,9 @@ export class Engine {
     if (from === to) return `already at ${dest.name}`;
     const minutes = travelMinutes(from, to);
     const out: GameEvent[] = [];
-    const tr: GameEvent = { type: "travel", ...this.base(1400), who: movers, from, to, minutes, how };
+    // visible travel in the open world: a few seconds across town, longer by Quinjet
+    const ms = Math.min(9000, 2800 + minutes * 45);
+    const tr: GameEvent = { type: "travel", ...this.base(ms), who: movers, from, to, minutes, how };
     this.world.apply(tr); out.push(tr);
     // place arrivals on distinct entry markers
     movers.forEach((id, i) => {

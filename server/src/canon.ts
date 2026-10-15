@@ -59,10 +59,11 @@ export function loadCharacter(id: string): Character | null {
   return { id, stats, bible };
 }
 
+/** Approved roster: folders with stats.json and no pending.json marker (drafts awaiting the Editor). */
 export function listCharacterIds(): string[] {
   const dir = path.join(CONFIG.canonDir, "characters");
   if (!fs.existsSync(dir)) return [];
-  return fs.readdirSync(dir).filter((d) => fs.existsSync(path.join(dir, d, "stats.json"))).sort();
+  return fs.readdirSync(dir).filter((d) => fs.existsSync(path.join(dir, d, "stats.json")) && !fs.existsSync(path.join(dir, d, "pending.json"))).sort();
 }
 
 export function loadWorldDoc(name: string): string {
