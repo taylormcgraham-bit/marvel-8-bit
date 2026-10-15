@@ -82,8 +82,35 @@ export const BeatFight = z.object({
   stakes: z.string().max(160).describe("what each side is trying to do, in one line; the Tactician fights toward this"),
 });
 
+/** Mark an act objective done or failed. Objective ids come from the current act in the prompt. */
+export const BeatObjective = z.object({
+  type: z.literal("objective"),
+  id: z.string(),
+  status: z.enum(["done", "failed"]),
+});
+/** Bring a cast member listed for this issue onto the stage at a marker. */
+export const BeatEnter = z.object({
+  type: z.literal("enter"),
+  who: z.string(),
+  at: MarkerId,
+  how: z.string().max(100).optional().describe("one clause, e.g. 'drops from the fire escape'"),
+});
+/** A character leaves the stage. */
+export const BeatExit = z.object({
+  type: z.literal("exit"),
+  who: z.string(),
+  how: z.string().max(100).optional(),
+});
+/** Only valid for a death the Showrunner planned and the Editor approved. The engine rejects anything else. */
+export const BeatDeath = z.object({
+  type: z.literal("death"),
+  who: z.string(),
+  how: z.string().max(160),
+});
+
 export const Beat = z.discriminatedUnion("type", [
   BeatCaption, BeatMove, BeatFace, BeatSay, BeatEmote, BeatWait, BeatStrike, BeatRescue, BeatFight,
+  BeatObjective, BeatEnter, BeatExit, BeatDeath,
 ]);
 export type Beat = z.infer<typeof Beat>;
 
@@ -163,6 +190,20 @@ export const EvFightEnd = EventBase.extend({
   summary: z.string(),
 });
 export const EvInjury = EventBase.extend({ type: z.literal("injury"), who: z.string(), injury: Injury });
+export const Objective = z.object({ id: z.string(), text: z.string(), status: z.enum(["open", "done", "failed"]) });
+export type Objective = z.infer<typeof Objective>;
+/** An act begins (also used in snapshots to describe the current act). */
+export const EvAct = EventBase.extend({
+  type: z.literal("act"),
+  issue: z.number().int(),
+  n: z.number().int(),
+  title: z.string(),
+  goal: z.string(),
+  objectives: z.array(Objective),
+});
+export const EvObjective = EventBase.extend({ type: z.literal("objective"), id: z.string(), text: z.string(), status: z.enum(["done", "failed"]) });
+export const EvIssueEnd = EventBase.extend({ type: z.literal("issueEnd"), issue: z.number().int(), title: z.string(), summary: z.string(), next: z.string().optional() });
+export const EvDeath = EventBase.extend({ type: z.literal("death"), who: z.string(), name: z.string(), how: z.string(), issue: z.number().int() });
 export const EvHeal = EventBase.extend({
   type: z.literal("heal"),
   who: z.string(),
@@ -204,7 +245,7 @@ export const EvSpawn = EventBase.extend({
   /** procedural-rig hints; absent when a hand-drawn sheet exists for this character */
   look: z.record(z.string(), z.unknown()).optional(),
 });
-export const EvDespawn = EventBase.extend({ type: z.literal("despawn"), who: z.string() });
+export const EvDespawn = EventBase.extend({ type: z.literal("despawn"), who: z.string(), how: z.string().optional() });
 export const EvNote = EventBase.extend({
   type: z.literal("note"),
   level: z.enum(["info", "warn", "reject"]),
@@ -214,6 +255,7 @@ export const EvNote = EventBase.extend({
 export const GameEvent = z.discriminatedUnion("type", [
   EvCaption, EvMove, EvFace, EvSay, EvEmote, EvWait, EvRescue, EvStrike,
   EvFightStart, EvRound, EvFightEnd, EvInjury, EvHeal,
+  EvAct, EvObjective, EvIssueEnd, EvDeath,
   EvTitle, EvScene, EvSpawn, EvDespawn, EvNote,
 ]);
 export type GameEvent = z.infer<typeof GameEvent>;

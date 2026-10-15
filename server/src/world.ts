@@ -61,6 +61,8 @@ export class World {
   seq = 0;
   /** true while a fight runs; healing pauses and the clock scene-locks */
   inFight = false;
+  /** character ids that died on-panel (returns are Showrunner-planned, Phase 3+) */
+  readonly deceased = new Set<string>();
   private logPath: string;
   private statePath: string;
 
@@ -76,7 +78,20 @@ export class World {
 
   get timeOfDay() { return this.clock.timeOfDay; }
   marker(id: string) { return this.map.markers.find((m) => m.id === id); }
-  nameOf(id: string) { return this.actors.get(id)?.name ?? id; }
+  private nameCache = new Map<string, string>();
+  /** Display name for any character id, on stage or not. */
+  nameOf(id: string): string {
+    const a = this.actors.get(id); if (a) return a.name;
+    let n = this.nameCache.get(id);
+    if (!n) { n = loadCharacter(id)?.stats.name ?? id; this.nameCache.set(id, n); }
+    return n;
+  }
+  /** Events belonging to the current issue (from its title card on). */
+  currentIssueEvents(issue: number): GameEvent[] {
+    let start = 0;
+    this.events.forEach((e, i) => { if (e.type === "title" && e.issue === issue && e.seq > 0) start = i; });
+    return this.events.slice(start);
+  }
   nextSeq() { return ++this.seq; }
 
   nearestMarker(a: { x: number; y: number }) {
@@ -128,10 +143,14 @@ export class World {
       case "fightEnd": return `[FIGHT OVER: ${e.reason}] ${e.summary}`;
       case "injury": return `${n(e.who)} is injured: ${e.injury.name} (severity ${e.injury.severity}, from ${e.injury.cause}).`;
       case "heal": return e.healed.length ? `${n(e.who)} has healed: ${e.healed.join(", ")}.` : `${n(e.who)} recovers to HP ${e.hp}.`;
+      case "act": return `--- ACT ${e.n}: ${e.title} --- ${e.goal} Objectives: ${e.objectives.map((o) => `${o.text} [${o.status}]`).join("; ")}`;
+      case "objective": return `[OBJECTIVE ${e.status.toUpperCase()}] ${e.text}`;
+      case "issueEnd": return `=== END OF ISSUE #${e.issue} === ${e.summary}`;
+      case "death": return `[DEATH] ${e.name} dies: ${e.how}`;
       case "title": return `=== ISSUE #${e.issue}: ${e.title}${e.subtitle ? " - " + e.subtitle : ""} ===`;
       case "scene": return `[SCENE] ${e.locationName}, ${e.timeOfDay}${e.caption ? ": " + e.caption : ""}`;
       case "spawn": return `${e.name} is present at ${e.at}.`;
-      case "despawn": return `${n(e.who)} leaves.`;
+      case "despawn": return `${n(e.who)} leaves${e.how ? ` (${e.how})` : ""}.`;
       case "note": return `[${e.level.toUpperCase()}] ${e.text}`;
     }
   }
@@ -155,6 +174,7 @@ export class World {
         break;
       }
       case "despawn": this.actors.delete(e.who); break;
+      case "death": this.actors.delete(e.who); this.deceased.add(e.who); break;
       case "move": {
         const a = this.actors.get(e.who);
         if (a) {

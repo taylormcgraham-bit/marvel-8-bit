@@ -6,6 +6,9 @@ import type { Beat, GameEvent, Injury } from "../../shared/events.js";
 import type { Character } from "./canon.js";
 import { World, type Actor } from "./world.js";
 import { resolveStrike, injuryFor, hpPerHour, staminaRegen } from "./combat.js";
+import type { Story } from "./story.js";
+import type { Objective } from "../../shared/events.js";
+import { loadCharacter } from "./canon.js";
 
 export interface Rejection { beat: Beat; reason: string }
 
@@ -16,6 +19,7 @@ const MS = {
 };
 
 export class Engine {
+  story?: Story;
   constructor(readonly world: World) {}
 
   private base(ms: number) { return { seq: this.world.nextSeq(), t: Date.now(), ms }; }
@@ -48,6 +52,23 @@ export class Engine {
 
   note(level: "info" | "warn" | "reject", text: string): GameEvent {
     const e: GameEvent = { type: "note", ...this.base(0), level, text };
+    this.world.apply(e); return e;
+  }
+
+  act(issue: number, n: number, title: string, goal: string, objectives: Objective[]): GameEvent {
+    const e: GameEvent = { type: "act", ...this.base(2600), issue, n, title, goal, objectives };
+    this.world.apply(e); return e;
+  }
+  objective(o: Objective): GameEvent {
+    const e: GameEvent = { type: "objective", ...this.base(1600), id: o.id, text: o.text, status: o.status === "failed" ? "failed" : "done" };
+    this.world.apply(e); return e;
+  }
+  issueEnd(issue: number, title: string, summary: string, next?: string): GameEvent {
+    const e: GameEvent = { type: "issueEnd", ...this.base(5000), issue, title, summary, next };
+    this.world.apply(e); return e;
+  }
+  despawn(who: string, how?: string): GameEvent {
+    const e: GameEvent = { type: "despawn", ...this.base(600), who, how };
     this.world.apply(e); return e;
   }
 
@@ -145,6 +166,36 @@ export class Engine {
   resolveOne(beat: Beat): GameEvent | string | null {
     switch (beat.type) {
       case "fight": return null;
+      case "objective": {
+        if (!this.story?.loaded) return "no issue is running";
+        const r = this.story.mark(beat.id, beat.status);
+        if (typeof r === "string") return r;
+        return { type: "objective", ...this.base(1600), id: r.id, text: r.text, status: beat.status };
+      }
+      case "enter": {
+        if (this.world.actors.has(beat.who)) return `${this.world.nameOf(beat.who)} is already on stage`;
+        if (this.story?.loaded && !this.story.plan.cast.includes(beat.who)) return `${beat.who} is not in this issue's cast (${this.story.plan.cast.join(", ")})`;
+        if (this.world.deceased.has(beat.who)) return `${beat.who} is dead`;
+        const c = loadCharacter(beat.who); if (!c) return `unknown character "${beat.who}"`;
+        const m = this.world.marker(beat.at); if (!m) return `unknown marker "${beat.at}"`;
+        const a = this.world.addActor(c, m.x, m.y, "down");
+        this.world.actors.delete(beat.who); // the spawn event re-adds it on apply
+        return {
+          type: "spawn", ...this.base(900), who: c.id, name: c.stats.name, at: m.id, x: m.x, y: m.y, facing: "down",
+          hp: a.hp, maxHp: a.maxHp, stamina: a.stamina, maxStamina: a.maxStamina, resources: a.resources, injuries: a.injuries,
+          palette: c.stats.palette, role: c.stats.role, look: c.stats.look,
+        };
+      }
+      case "exit": {
+        const a = this.actor(beat.who); if (typeof a === "string") return a;
+        return { type: "despawn", ...this.base(900), who: beat.who, how: beat.how };
+      }
+      case "death": {
+        const a = this.actor(beat.who); if (typeof a === "string") return a;
+        const err = this.story?.deathAllowed(beat.who) ?? "no issue is running";
+        if (err) return err;
+        return { type: "death", ...this.base(4000), who: beat.who, name: a.name, how: beat.how, issue: this.story!.number };
+      }
       case "caption": return { ...beat, ...this.base(MS.caption) };
       case "wait": return { ...beat, ...this.base(beat.ms) };
       case "face": { const a = this.actor(beat.who); if (typeof a === "string") return a; return { ...beat, ...this.base(MS.face) }; }

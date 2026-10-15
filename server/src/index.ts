@@ -5,6 +5,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { ClientMsg, type ServerMsg } from "../../shared/events.js";
 import { CONFIG } from "./config.js";
 import { Showrunner } from "./showrunner.js";
+import { chroniclePage, deskPage } from "./pages.js";
 import { listCharacterIds, loadCharacter } from "./canon.js";
 import { maxHpFor } from "./world.js";
 
@@ -23,7 +24,17 @@ function authorized(req: http.IncomingMessage): boolean {
   return decoded.slice(decoded.indexOf(":") + 1) === want;
 }
 
-const server = http.createServer((req, res) => {
+function readBody(req: http.IncomingMessage): Promise<string> {
+  return new Promise((resolve) => { let b = ""; req.on("data", (c) => { b += c; if (b.length > 100_000) req.destroy(); }); req.on("end", () => resolve(b)); });
+}
+function listNotes(): { file: string; text: string }[] {
+  if (!fs.existsSync(CONFIG.inboxDir)) return [];
+  return fs.readdirSync(CONFIG.inboxDir).filter((f) => /\.(md|txt)$/i.test(f) && f !== "README.md").sort()
+    .map((f) => ({ file: f, text: fs.readFileSync(path.join(CONFIG.inboxDir, f), "utf8").trim() })).filter((n) => n.text);
+}
+const redirect = (res: http.ServerResponse, to: string) => { res.statusCode = 303; res.setHeader("location", to); res.end(); };
+
+const server = http.createServer(async (req, res) => {
   if (!authorized(req)) {
     res.statusCode = 401;
     res.setHeader("WWW-Authenticate", 'Basic realm="marvel-8-bit"');
@@ -31,6 +42,31 @@ const server = http.createServer((req, res) => {
     return;
   }
   const url = new URL(req.url ?? "/", "http://localhost");
+  // ---- pages
+  if (url.pathname === "/chronicle") { res.setHeader("content-type", "text/html; charset=utf-8"); res.end(chroniclePage(run)); return; }
+  if (url.pathname === "/desk") { res.setHeader("content-type", "text/html; charset=utf-8"); res.end(deskPage(run, listNotes())); return; }
+  // ---- Editor's Desk actions
+  if (req.method === "POST" && url.pathname === "/api/notes") {
+    const body = new URLSearchParams(await readBody(req));
+    const text = (body.get("text") ?? "").trim().slice(0, 2000);
+    if (text) { fs.mkdirSync(CONFIG.inboxDir, { recursive: true }); fs.writeFileSync(path.join(CONFIG.inboxDir, `note-${Date.now()}.md`), text + "\n"); }
+    redirect(res, "/desk"); return;
+  }
+  if (req.method === "POST" && url.pathname === "/api/notes/delete") {
+    const body = new URLSearchParams(await readBody(req));
+    const file = path.basename(body.get("file") ?? "");
+    if (file && file !== "README.md" && /\.(md|txt)$/i.test(file)) { try { fs.unlinkSync(path.join(CONFIG.inboxDir, file)); } catch { /* gone */ } }
+    redirect(res, "/desk"); return;
+  }
+  if (req.method === "POST" && (url.pathname === "/api/deaths/approve" || url.pathname === "/api/deaths/veto")) {
+    run.decideDeath(url.pathname.endsWith("approve") ? "approved" : "vetoed");
+    redirect(res, "/desk"); return;
+  }
+  if (url.pathname === "/api/desk") {
+    res.setHeader("content-type", "application/json");
+    res.end(JSON.stringify({ issue: run.story.loaded ? { number: run.story.number, plan: run.story.plan, actIndex: run.story.actIndex, objectives: run.story.objectives, pendingDeath: run.story.pendingDeath } : null, notes: listNotes(), memory: run.memory }, null, 2));
+    return;
+  }
   if (url.pathname === "/api/state") {
     res.setHeader("content-type", "application/json");
     res.end(JSON.stringify({
@@ -83,7 +119,7 @@ function send(ws: WebSocket, msg: ServerMsg) {
 }
 
 wss.on("connection", (ws) => {
-  send(ws, { kind: "hello", mode: run.mode, replay: run.world.snapshot() });
+  send(ws, { kind: "hello", mode: run.mode, replay: run.snapshot() });
   const off = run.onEvents((events) => send(ws, { kind: "events", events }));
   run.viewerJoined();
   ws.on("message", (raw) => {

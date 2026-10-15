@@ -24,6 +24,10 @@ export const CONFIG = {
   directorModel: process.env.DIRECTOR_MODEL ?? "claude-opus-5-5",
   directorEffort: (process.env.DIRECTOR_EFFORT ?? "medium") as "low" | "medium" | "high",
   continuityModel: process.env.CONTINUITY_MODEL ?? "claude-haiku-5-5",
+  /** Showrunner plans an issue once per issue: strongest tier, high effort. */
+  showrunnerModel: process.env.SHOWRUNNER_MODEL ?? "claude-opus-5-5",
+  /** Archivist closes an issue: summary, relationships, facts, threads. */
+  archivistModel: process.env.ARCHIVIST_MODEL ?? "claude-sonnet-5-5",
   /** Tactician picks every combatant's move each round; fast tier, low effort, one call per round. */
   tacticianModel: process.env.TACTICIAN_MODEL ?? "claude-sonnet-5-5",
   /** "rules" = deterministic checks only; "llm" = rules + Continuity Editor model pass. */

@@ -9,6 +9,8 @@ import { CONFIG } from "../config.js";
 import { readInbox, loadWorldDoc } from "../canon.js";
 import type { World } from "../world.js";
 import type { Rejection } from "../engine.js";
+import type { Story } from "../story.js";
+import type { Memory } from "../memory.js";
 
 const ROLE = `You are the SCENE DIRECTOR in the Bullpen of a private, AI-played Marvel video game rendered as an 8-bit RPG.
 You do not narrate. You direct: you tell the engine what each character does and says next, as a short list of beats.
@@ -25,6 +27,8 @@ PRINCIPLES
 - A strike must name a move id from the attacker's move list and the attacker must be within ~3 tiles for melee. Move first, then strike.
 - Injuries, stamina and resources in ON STAGE are real and persist. A winded or hurt character fights worse and should act like it. Someone at 0 web fluid cannot web.
 - Do not resolve outcomes yourself. Never write "and hits" or "knocks him down" in dialogue before the engine has resolved it; react to the transcript's actual outcomes instead.
+- You are staging ONE ACT of a planned issue. The act has a goal, a set-piece and OBJECTIVES. Work toward them; when one is visibly achieved, emit an objective beat marking it done (or failed). The act ends when all objectives are resolved, and the next act's plan is handed to you.
+- Cast listed as OFF STAGE may enter with an enter beat at a marker when their cue comes. Characters may leave with an exit beat. Nobody dies unless a death beat is explicitly permitted below.
 - End each chunk at a natural hinge so the next chunk can pick up. Use sceneNote to tell your future self what you are building toward.
 
 OUTPUT: a single JSON object matching the provided schema: { sceneNote, beats[] }.`;
@@ -32,6 +36,8 @@ OUTPUT: a single JSON object matching the provided schema: { sceneNote, beats[] 
 export interface DirectorInput {
   world: World;
   rejections: Rejection[];
+  story?: Story;
+  memory?: Memory;
 }
 
 export interface DirectorResult {
@@ -77,8 +83,24 @@ export class Director {
     const rej = rejections.length
       ? `\nTHE ENGINE REJECTED THESE BEATS FROM YOUR LAST ATTEMPT (do not repeat them; adjust):\n${rejections.map((r) => `- ${JSON.stringify(r.beat)} -> ${r.reason}`).join("\n")}\n`
       : "";
-    return `ISSUE #${world.issue.number}: ${world.issue.title}
+    const story = input.story;
+    const storyBlock = story?.loaded ? `ISSUE #${story.number}: ${story.plan.title}
+PREMISE: ${story.plan.premise}
+
+CURRENT ACT ${story.actIndex + 1} of 3: "${story.act.title}"
+ACT GOAL: ${story.act.goal}
+SET-PIECE TO BUILD TOWARD: ${story.act.setPiece}
+OBJECTIVES:
+${story.actObjectives.map((o) => `- [${o.status}] ${o.id}: ${o.text}`).join("\n")}
+${story.act.arrivals.length ? `PLANNED ARRIVALS THIS ACT:\n${story.act.arrivals.map((a) => `- ${a.who} at ${a.at}, cue: ${a.cue}`).join("\n")}` : ""}
+OFF STAGE (may enter): ${story.plan.cast.filter((id) => !world.actors.has(id) && !world.deceased.has(id)).join(", ") || "nobody"}
+${story.pendingDeath?.status === "approved" && story.actIndex + 1 >= story.pendingDeath.act ? `A DEATH IS PERMITTED THIS ACT: ${story.pendingDeath.who}, by ${story.pendingDeath.mechanism}. Earn it; use a death beat only at the climax.` : ""}
+${input.memory ? `
+${input.memory.describe(story.plan.cast)}
+` : ""}` : `ISSUE #${world.issue.number}: ${world.issue.title}
 PREMISE: ${world.issue.premise}
+`;
+    return `${storyBlock}
 
 LOCATION: ${world.map.name}. GAME TIME: ${world.clock.label} (${world.timeOfDay}). ${world.map.flavor}
 MARKERS:

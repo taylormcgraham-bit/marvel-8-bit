@@ -19,9 +19,11 @@ always plays something. Set `MOCK=1` to force it.
 
 - Press `` ` `` in the theater for the engine console (rejections, continuity notes). Press `C` to toggle scanlines.
 - `http://localhost:5173/?showcase` spawns the whole roster for art review.
-- `http://localhost:8787/api/chronicle` is the running transcript of everything that happened.
-- `http://localhost:8787/api/state` is the live world state.
-- Drop a `.md` note in `inbox/` and the Director reads it on its next call (see `inbox/README.md`).
+- `http://localhost:8787/desk` is the **Editor's Desk**: current act and objectives, your notes
+  to the Bullpen, planned-death approvals, stage condition, roster, memory.
+- `http://localhost:8787/chronicle` is the **Chronicle**: every issue as readable comic pages.
+- Press `Q` in the theater for the quest log.
+- Notes can also be dropped as `.md` files in `inbox/` (see `inbox/README.md`).
 - `npm run validate:canon` checks every character folder against the schema.
 - `npm run reset` wipes the event log and starts the issue fresh.
 
@@ -87,8 +89,10 @@ Generation only happens while a theater is connected and its playback buffer is 
 
 ## Status
 
-Phases 0 to 2 are done: canon for the launch roster; one rooftop map with the live Director
+Phases 0 to 3 are done: canon for the launch roster; one rooftop map with the live Director
 and prompt-cached bibles; fights run in rounds by the Tactician with stamina, injuries that
-persist and heal over game time, and enforced resources; a world that replays its event log
-on restart; procedural block-style art with a drop-in pipeline for hand-drawn sheets. See the
-roadmap in `docs/DESIGN.md` for what comes next (Phase 3: the Showrunner).
+persist and heal over game time, and enforced resources; issues planned by the Showrunner as
+three-act arcs with objectives, closed by the Archivist into a Chronicle and long-term
+memory; the Editor's Desk; a world that replays its event log on restart; procedural
+block-style art with a drop-in pipeline for hand-drawn sheets. Next: Phase 4 (more
+locations, off-panel catch-up, schedules, factions). See `docs/DESIGN.md`.

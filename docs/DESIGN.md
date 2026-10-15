@@ -244,7 +244,7 @@ boss arena).
 | **0. Canon** ✅ | Write bibles for the 12 launch characters, world rules, faction definitions, location histories. | Bibles reviewed by you. |
 | **1. Theater** ✅ | One district, three characters, Scene Director + Continuity Editor only. Move / say / emote beats render in Phaser. | You can watch Spidey and Goblin banter on a rooftop for 20 minutes without it breaking. |
 | **2. Game** ✅ | Combat Engine, Tactician, stats, HP, injuries, on-map fights, HUD. | A fight looks and feels like a game, outcomes persist. |
-| **3. Story** | Showrunner, arcs as issues, quest log, title cards, Chronicle, Editor's Desk. | A full 3-act issue plays start to finish and your notes shape the next one. |
+| **3. Story** ✅ | Showrunner, arcs as issues, quest log, title cards, Chronicle, Editor's Desk. | A full 3-act issue plays start to finish and your notes shape the next one. |
 | **4. World** | More districts and realms, World Sim (clock, weather, schedules, scheme meters), factions, Off-Panel Catch-Up and recaps. | You can close it for a day and come back to a living world. |
 | **5. Polish** | Codex, cinematic camera, chiptune score, portraits, roster-request pipeline. | It feels like a PS5 game wearing an NES costume. |
 
@@ -293,6 +293,29 @@ boss arena).
 - **Persistence.** The world replays `data/events.jsonl` on startup; every event carries the
   full resulting state it needs (HP, stamina, spent resources), so a restart reproduces the
   world exactly. `data/world.json` keeps the Director's scene note and the RNG state.
+
+### Phase 3 notes (Story)
+
+- **Issues are plans** (`server/src/story.ts`): title, premise, antagonist, cast, opening
+  positions, three acts each with a goal, a set-piece, one to three observable objectives and
+  planned arrivals, optional planned death, hooks for later. The **Showrunner** agent writes
+  one per issue from the roster, the Chronicle, memory and your notes; a scripted plan covers
+  no-key mode and Issue #1.
+- **Acts advance** when every objective is done or failed (the Director marks them with an
+  `objective` beat) or after `MAX_CHUNKS_PER_ACT` chunks if an act stalls. Act 3 is held while
+  a planned death is pending on the Desk; the window auto-approves after 24 real hours.
+- **Cast moves**: `enter` (only cast listed for the issue, at a marker) and `exit` beats.
+  A `death` beat is accepted only for the planned, approved character in the planned act;
+  the engine never kills otherwise. Deaths go to the ledger in memory.
+- **Issue close**: the **Archivist** summarizes the transcript, updates relationship
+  temperatures, facts learned on-panel and threads in `data/memory.json`, and writes
+  `data/chronicle/issue-NNN.json`. The Showrunner then plans the next issue, game time
+  skips ahead by its `opensAfterGameHours` (wounds heal), the cast changes, and a new title
+  card plays.
+- **Pages**: `/chronicle` renders every issue as readable comic pages with the live
+  transcript; `/desk` shows the current act and objectives, lets you add and remove notes,
+  approve or veto a planned death, and see stage condition, roster and memory.
+- **Theater**: quest log (Q), act banners, objective toasts, end-of-issue cards.
 
 ## 13. Open questions
 

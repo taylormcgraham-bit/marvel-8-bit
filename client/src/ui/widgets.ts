@@ -171,3 +171,37 @@ export function floatText(scene: Phaser.Scene, x: number, y: number, text: strin
   scene.tweens.add({ targets: t, scale: 1, duration: 120 });
   scene.tweens.add({ targets: t, y: y - 16, alpha: 0, duration: 1000, delay: 200, ease: "Quad.easeOut", onComplete: () => t.destroy() });
 }
+
+/** Quest log: current act and its objectives, top-left. Toggle with Q; shows itself on change. */
+export class QuestLog {
+  private root: Phaser.GameObjects.Container;
+  private box?: Phaser.GameObjects.Graphics;
+  private lines: Phaser.GameObjects.Text[] = [];
+  private hideAt = 0;
+  visible = false;
+  constructor(private scene: Phaser.Scene) {
+    this.root = scene.add.container(6, 24).setDepth(960).setAlpha(0);
+  }
+  set(issue: number, act: number, title: string, objectives: { text: string; status: string }[]) {
+    this.lines.forEach((l) => l.destroy()); this.lines = []; this.box?.destroy();
+    const head = this.scene.add.text(6, 5, `ISSUE #${issue} · ACT ${act}: ${title.toUpperCase()}`, { ...FONT, fontSize: "6px", color: PAL.yellow });
+    this.lines.push(head);
+    let y = 15;
+    for (const o of objectives) {
+      const mark = o.status === "done" ? "■" : o.status === "failed" ? "x" : "□";
+      const color = o.status === "done" ? PAL.green : o.status === "failed" ? "#ff8a8a" : PAL.white;
+      const t = this.scene.add.text(6, y, `${mark} ${o.text}`, { ...FONT, fontSize: "6px", color, wordWrap: { width: 150 } });
+      this.lines.push(t); y += t.height + 3;
+    }
+    const w = Math.max(head.width, ...this.lines.map((l) => l.width)) + 12, h = y + 3;
+    this.box = this.scene.add.graphics();
+    this.box.fillStyle(0x000000, 0.55).fillRect(2, 2, w, h);
+    this.box.fillStyle(0x101838, 0.92).fillRect(0, 0, w, h);
+    this.box.lineStyle(1, 0x6a6a9a, 1).strokeRect(0, 0, w, h);
+    this.root.removeAll(); this.root.add([this.box, ...this.lines]);
+    this.flash();
+  }
+  flash() { this.root.setAlpha(1); this.hideAt = this.scene.time.now + 6000; }
+  toggle() { this.visible = !this.visible; this.root.setAlpha(this.visible ? 1 : 0); }
+  tick() { if (!this.visible && this.root.alpha > 0 && this.scene.time.now > this.hideAt) this.scene.tweens.add({ targets: this.root, alpha: 0, duration: 500 }); }
+}

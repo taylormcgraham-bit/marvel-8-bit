@@ -10,7 +10,7 @@ import { VIEW_W, VIEW_H } from "../main";
 import {
   TILE, CHAR_W, CHAR_H, PAL, FRAME_INDEX, makeTiles, makeSky, makeObjects, makeCharacter, makePortrait, makeEmotes, makeFx, type Look,
 } from "../render/pixels";
-import { DialogBox, CaptionBox, TitleCard, HpBar, FONT, floatText, banner } from "../ui/widgets";
+import { DialogBox, CaptionBox, TitleCard, HpBar, QuestLog, FONT, floatText, banner } from "../ui/widgets";
 
 interface Manifest {
   characters?: Record<string, { sheet: string; frameWidth?: number; frameHeight?: number; portrait?: string }>;
@@ -49,6 +49,9 @@ export class TheaterScene extends Phaser.Scene {
   private title!: TitleCard;
   private hud!: Phaser.GameObjects.Text;
   private scanlines!: Phaser.GameObjects.Image;
+  private quest!: QuestLog;
+  private objectives: { id: string; text: string; status: string }[] = [];
+  private actInfo = { issue: 0, n: 0, title: "" };
   private consoleEl = document.getElementById("console") as HTMLPreElement;
   private badgeEl = document.getElementById("badge") as HTMLDivElement;
   private mode: "live" | "mock" = "mock";
@@ -81,6 +84,8 @@ export class TheaterScene extends Phaser.Scene {
     this.title = new TitleCard(this, VIEW_W, VIEW_H);
     this.hud = this.add.text(VIEW_W - 4, 3, "", { ...FONT, fontSize: "6px", color: "#b0b0c8", stroke: PAL.black, strokeThickness: 2 }).setOrigin(1, 0).setDepth(940);
     this.scanlines = this.add.image(0, 0, "scanlines").setOrigin(0).setDepth(1900).setAlpha(0.5);
+    this.quest = new QuestLog(this);
+    this.input.keyboard?.on("keydown-Q", () => this.quest.toggle());
 
     this.input.keyboard?.on("keydown-BACKQUOTE", () => { this.consoleEl.hidden = !this.consoleEl.hidden; });
     this.input.keyboard?.on("keydown-C", () => this.scanlines.setVisible(!this.scanlines.visible));
@@ -97,7 +102,7 @@ export class TheaterScene extends Phaser.Scene {
     this.net = new Net({
       onHello: (mode, replay) => {
         this.mode = mode;
-        this.badgeEl.textContent = (mode === "mock" ? "MOCK DIRECTOR" : "LIVE") + "  ·  ` console  ·  C scanlines";
+        this.badgeEl.textContent = (mode === "mock" ? "MOCK DIRECTOR" : "LIVE") + "  ·  Q quests  ·  ` console  ·  C scanlines  ·  /desk  /chronicle";
         this.resetStage();
         this.enqueue(replay);
       },
@@ -110,6 +115,7 @@ export class TheaterScene extends Phaser.Scene {
 
   update(_t: number, dt: number) {
     for (const a of this.actors.values()) a.hpBar.tick(this);
+    this.quest.tick();
     this.idleTimer += dt;
     if (!this.playing && this.queue.length === 0 && this.idleTimer > 2600) {
       this.idleTimer = 0;
@@ -252,6 +258,7 @@ export class TheaterScene extends Phaser.Scene {
       case "spawn": { this.spawn(e); return this.wait(e.ms); }
       case "despawn": {
         const a = this.actors.get(e.who); if (!a) return;
+        if (e.how) floatText(this, a.sprite.x, a.sprite.y - CHAR_H - 10, e.how.toUpperCase().slice(0, 24), "#b0b0c8");
         await this.tween({ targets: [a.sprite, a.label, a.shadow], alpha: 0, duration: 400 });
         a.sprite.destroy(); a.label.destroy(); a.shadow.destroy(); a.hpBar.root.destroy(); this.actors.delete(e.who);
         return;
@@ -306,6 +313,33 @@ export class TheaterScene extends Phaser.Scene {
         b.destroy(); return;
       }
       case "strike": return this.strike(e);
+      case "act": {
+        this.actInfo = { issue: e.issue, n: e.n, title: e.title };
+        this.objectives = e.objectives.map((o) => ({ ...o }));
+        this.quest.set(e.issue, e.n, e.title, this.objectives);
+        if (e.seq === 0) return this.wait(200); // snapshot: no banner
+        const roman = ["I", "II", "III"][e.n - 1] ?? String(e.n);
+        return banner(this, VIEW_W, VIEW_H, `ACT ${roman}`, PAL.yellow, e.ms, e.title.toUpperCase());
+      }
+      case "objective": {
+        const o = this.objectives.find((x) => x.id === e.id); if (o) o.status = e.status;
+        this.quest.set(this.actInfo.issue, this.actInfo.n, this.actInfo.title, this.objectives);
+        floatText(this, VIEW_W / 2, 60, e.status === "done" ? "OBJECTIVE COMPLETE" : "OBJECTIVE FAILED", e.status === "done" ? PAL.green : "#ff8a8a", true);
+        return this.wait(e.ms);
+      }
+      case "issueEnd": {
+        this.objectives = [];
+        return this.title.show(e.issue, `END OF ISSUE: ${e.title}`, e.next ? `NEXT: ${e.next}` : undefined, e.ms);
+      }
+      case "death": {
+        const a = this.actors.get(e.who); if (!a) return;
+        this.cameras.main.flash(300, 255, 255, 255, false);
+        a.sprite.stop(); a.sprite.setFrame(FRAME_INDEX("ko", "side")); a.sprite.setAngle(90); a.ko = true;
+        await this.caption.show(`${e.name} ${e.how}`, e.ms - 800);
+        await this.tween({ targets: [a.sprite, a.label, a.shadow], alpha: 0, duration: 800 });
+        a.sprite.destroy(); a.label.destroy(); a.shadow.destroy(); a.hpBar.root.destroy(); this.actors.delete(e.who);
+        return;
+      }
       case "fightStart": {
         for (const id of e.sides.flat()) { const a = this.actors.get(id); if (a) { a.hpBar.pinned = true; a.hpBar.set(a.hp, a.maxHp, this, a.stamina, a.maxStamina); } }
         this.cameras.main.flash(80, 255, 255, 255, false);
