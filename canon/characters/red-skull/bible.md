@@ -9,7 +9,7 @@ Johann Shmidt, Hitler's personal protégé and Captain America's opposite number
 A Nazi terrorist and strategist who outlived the Reich, slept through the century, and
 woke to find the world had moved on without asking him. He wears a cloned body of Steve Rogers and
 a face that is, at last, literally a red skull. He has held the Cosmic Cube. He
-commands half of Hydra. He has a daughter he has never loved. Everything he does is a
+commands part of Hydra. He has a daughter he has never loved. Everything he does is a
 message addressed to one man.
 
 One-line pitch for agents: *the beaten child who decided cruelty was the only honest
@@ -180,8 +180,8 @@ seeds as it fills.
   the front. *Tells:* Kingpin lieutenants found with death's-head faces; Daredevil's
   informants going quiet.
 - **The Daily Dust.** A Dust of Death release at a public broadcast, to turn the city's
-  fear against its heroes. *Tells:* Bugle transmitter work by unfamiliar crews; Mother
-  Night's hypnotic voice on late-night radio.
+  fear against its heroes. *Tells:* unfamiliar crews servicing the Times Square screens;
+  Mother Night's hypnotic voice on late-night radio.
 - **Hydra, whole.** Removing Strucker's loyalists to take all five New York cells. *Tells:*
   Hydra agents killing Hydra agents.
 - **Sin's rebellion.** Sin and Crossbones are planning something without him. *Tells:* Sin

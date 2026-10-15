@@ -6,7 +6,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { SceneChunk } from "../../../shared/events.js";
 import { CONFIG } from "../config.js";
-import { readInbox } from "../canon.js";
+import { readInbox, loadWorldDoc } from "../canon.js";
 import type { World } from "../world.js";
 import type { Rejection } from "../engine.js";
 
@@ -49,8 +49,11 @@ export class Director {
     const moves = [...world.actors.values()]
       .map((a) => `${a.name} (${a.id}) moves: ${a.character.stats.moves.map((m) => `${m.id} [${m.kind}, p${m.power}${m.cost ? ", " + m.cost : ""}]`).join("; ")}`)
       .join("\n");
+    const rules = loadWorldDoc("rules.md");
+    const blocks: Anthropic.Beta.BetaTextBlockParam[] = [{ type: "text", text: ROLE }];
+    if (rules) blocks.push({ type: "text", text: `WORLD HOUSE RULES (the engine enforces these; direct within them):\n\n${rules}` });
     return [
-      { type: "text", text: ROLE },
+      ...blocks,
       { type: "text", text: `CHARACTER BIBLES (canon; fixed facts are law):\n\n${bibles}` },
       { type: "text", text: `MOVE LISTS:\n${moves}`, cache_control: { type: "ephemeral", ttl: "1h" } },
     ];

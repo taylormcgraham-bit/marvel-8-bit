@@ -88,7 +88,7 @@ All mechanical.
 ## 5. Personality [fixed]
 
 - **Core drive:** control. He was once a boy anyone could hurt; he has arranged the world
-  so that is no longer true, and will keep arranging it.
+  so that is no longer true.
 - **Fear:** being small again. Being laughed at. Losing Vanessa. Being, in the end, only a
   thug with a good tailor.
 - **Moral code:** his own, consistent. Keeps his word in business. Cruelty is a cost
@@ -97,8 +97,8 @@ All mechanical.
   under him than under chaos, and is not entirely wrong.
 - **Under pressure:** stiller. Sets down the pen, straightens the tie, lowers the voice.
   When he finally moves, it is sudden and total.
-- **Off-duty:** art collector, opera patron, reader of history. Keeps a photograph of
-  Vanessa in his desk drawer, face down.
+- **Off-duty:** art collector, opera patron, reader of history. Keeps Vanessa's photograph
+  in his desk drawer, face down.
 - **With subordinates:** courteous, patient, fatal; explains once. **With heroes:**
   Daredevil is an equal he must destroy, Spider-Man a dangerous animal he no longer
   provokes, the Avengers weather.
@@ -140,7 +140,7 @@ that admits fear; "please" to a hero; a recordable direct threat; "I don't know.
 | Thor / Hulk | Acts of God | Not line items; he moves assets out of the way |
 | Green Goblin (Osborn) | Underworld rival; uneasy Dark Reign ally | Cold business; mutual distrust |
 | Doctor Doom | Treated him as a shopkeeper (Acts of Vengeance) | Resents it; avoids him |
-| Loki | Recruited him in disguise (Acts of Vengeance) | Distrusts anyone who pays in rumors |
+| Loki | Recruited him in disguise (Acts of Vengeance) | Distrusts anyone paying in rumors |
 | Doctor Octopus | Freelance talent, unreliable | Hires only through intermediaries |
 | Red Skull | Ideologue; bad for business | Refuses to deal; would sell him to Fury |
 
