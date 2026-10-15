@@ -13,6 +13,7 @@ import { loadCharacter } from "./canon.js";
 import { CONFIG } from "./config.js";
 import { Engine, type Rejection } from "./engine.js";
 import { World } from "./world.js";
+import { describeDuration } from "./clock.js";
 
 export interface Cast { id: string; at: string; facing?: "up" | "down" | "left" | "right" }
 
@@ -20,6 +21,7 @@ export const ISSUE_ONE = {
   number: 1,
   title: "Night of the Goblin",
   subtitle: "A Chelsea rooftop. Three web cartridges. One old enemy.",
+  startsAt: Date.UTC(2026, 9, 14, 23, 48),
   premise:
     "Spider-Man is decompressing on his water-tower rooftop after a long night when the Green Goblin arrives, not to fight at first, but to talk: Norman has learned something about Harry he wants Peter to hear, and he enjoys the leverage. It goes bad the way it always does. Daredevil, patrolling two blocks over, hears the fight. The objective for the heroes: keep the Goblin away from the street below and find out what Norman actually wants. The objective for the Goblin: rattle Peter, test him, and leave on his own terms.",
   sceneNote: "",
@@ -81,12 +83,31 @@ export class Showrunner {
   onEvents(fn: Listener) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
   private emit(events: GameEvent[]) { for (const fn of this.listeners) fn(events); }
 
-  viewerJoined() { this.viewers++; this.kick(); }
-  viewerLeft() { this.viewers = Math.max(0, this.viewers - 1); }
+  viewerJoined() {
+    this.viewers++;
+    if (this.viewers === 1) {
+      const { awayMs, passedMs } = this.world.clock.resume();
+      if (passedMs > 0) {
+        // Phase 4 runs Off-Panel Catch-Up here. For now the clock moves and the world is told.
+        this.emitNote("info", `away ${describeDuration(awayMs)}; ${describeDuration(passedMs)} of game time passed. It is now ${this.world.clock.label}.`);
+        this.emit([this.engine.scene(`${describeDuration(passedMs).toUpperCase()} LATER...`)]);
+      } else if (awayMs > 60_000) {
+        this.log(`viewer back after ${describeDuration(awayMs)}; within grace, no game time passed (${this.world.clock.label})`);
+      }
+    }
+    this.kick();
+  }
+  viewerLeft() {
+    this.viewers = Math.max(0, this.viewers - 1);
+    if (this.viewers === 0) this.world.clock.pause();
+  }
   reportBuffer(ms: number) { this.bufferMs = ms; this.kick(); }
 
   start() {
-    this.timer = setInterval(() => this.kick(), 1000);
+    this.timer = setInterval(() => {
+      if (this.viewers > 0) this.world.clock.tick();
+      this.kick();
+    }, 1000);
   }
   stop() { if (this.timer) clearInterval(this.timer); }
 
@@ -144,6 +165,7 @@ export class Showrunner {
       const { events, rejections } = this.engine.resolve(chunk.beats);
       this.lastRejections = rejections;
       for (const r of rejections) this.emitNote("reject", `${r.beat.type} by ${"who" in r.beat ? r.beat.who : "?"}: ${r.reason}`);
+      this.world.clock.sceneLocked = events.some((e) => e.type === "strike");
       if (events.length) {
         this.emit(events);
         this.bufferMs += events.reduce((s, e) => s + e.ms, 0);

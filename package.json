@@ -12,7 +12,8 @@
     "start": "node dist/server/index.js",
     "typecheck": "tsc -p tsconfig.server.json --noEmit && tsc -p client/tsconfig.json --noEmit",
     "validate:canon": "tsx server/src/tools/validate-canon.ts",
-    "reset": "rm -rf data && echo 'world reset'"
+    "reset": "rm -rf data && echo 'world reset'",
+    "test": "node --import tsx --test server/src/**/*.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.134.0",

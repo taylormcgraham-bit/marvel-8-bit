@@ -170,13 +170,18 @@ in a scene, with prompt caching so the cost is paid once.
 ## 7. Time, presence, and the "always on" illusion
 
 - The simulation runs only while the page is open. While closed, nothing is generated.
-- On open, the engine computes elapsed real time → elapsed game time (configurable
-  ratio, capped at ~1 game-week per absence) and runs **Off-Panel Catch-Up**: the
-  Archivist generates downtime events only (travel completes, injuries heal, villain
-  meters advance, civilian life happens, small street-level incidents resolve). No arc
-  climaxes, no deaths, no reveals ever happen off-panel.
-- You then see a **"Previously on…"** recap page and the live world resumes exactly where
-  the story is, which makes it feel like the world kept living.
+- **Short absences cost nothing.** A reload, a coffee, a phone call: under 30 real minutes
+  away, no game time passes and the scene resumes exactly where it stopped.
+- **Longer absences taper.** Past the 30-minute grace, time passes 1:1 for the next six
+  hours or so, then at a quarter rate, capped at one game-week per absence. A day away is
+  about ten game-hours; a week away is about two game-days. The full table is in
+  `canon/world/rules.md` §1.2 and the curve in `server/src/clock.ts`.
+- **Scene lock.** If you closed the tab mid-fight or mid-set-piece, the clock does not move
+  at all; you come back to the same moment.
+- When time does pass, the engine runs **Off-Panel Catch-Up**: the Archivist generates
+  downtime events only (travel completes, injuries heal, villain meters advance, civilian
+  life happens, small street-level incidents resolve). No arc climaxes, no deaths, no
+  reveals ever happen off-panel. You then see a **"Previously on…"** recap page.
 - Optional later: pre-generate a 15-minute buffer when you close so the next open is instant.
 
 ---
@@ -265,9 +270,14 @@ boss arena).
 
 ## 13. Open questions
 
-- Game-time to real-time ratio while watching (leaning 1 game-hour ≈ 10 real minutes).
-- Permadeath policy: canon-faithful (deaths are rare, big, and sometimes reversed) vs. never.
-  Leaning: only the Showrunner may plan a death, and only with your veto window.
-- Multiverse: allow alternate-universe characters later (Miles, Gwen) or keep it 616-only.
+- ~~Permadeath policy~~ **Decided:** deaths are real, rare, Showrunner-planned with a 24-hour
+  Editor veto, and never final. Resurrection is a planned story device with a canon
+  mechanism and a cost, no sooner than two arcs later. A Deaths and Returns ledger lives in
+  the Chronicle. See `canon/world/rules.md` §5.2.
+- ~~Multiverse~~ **Decided:** allowed. Earth-616 is prime; variants are their own character
+  folders with a `universe` tag and arrive only on-panel via Showrunner-planned events.
+  Variants never silently undo a 616 death. See `canon/world/rules.md` §5.4.
+- ~~Game-time to real-time ratio~~ **Decided:** 1 game-hour ≈ 10 real minutes while watching;
+  grace-then-taper while away (§7).
 - Whether the Tactician should voice each combatant separately (more in-character, more
   cost) or pick for all combatants in one call (cheaper, risk of homogenized tactics).

@@ -207,6 +207,11 @@
         "type": "integer",
         "minimum": 0
       }
+    },
+    "universe": {
+      "type": "string",
+      "default": "616",
+      "description": "Marvel universe designation. 616 is prime; variants (65, 1610, 2099, ...) are their own character folders."
     }
   }
 }

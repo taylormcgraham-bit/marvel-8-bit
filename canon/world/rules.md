@@ -22,12 +22,24 @@
   renders the route).
 
 ### 1.2 Ratio while closed (catch-up)
-- While the page is closed, elapsed real time converts to game time at **1:1** (a day
-  away is a game-day), **capped at 7 game-days** per absence.
-- Absences under 10 real minutes do not advance the clock at all; the world resumes mid-
-  scene.
+The world should feel alive when you return, but a reload or a short break must never
+cost you story. Elapsed real time away converts to game time on a **grace-then-taper**
+curve:
+
+| Real time away | Game time that passes |
+|---|---|
+| Under 30 minutes | **None.** The world is exactly where you left it, mid-line if need be. |
+| 30 minutes to about 6.5 hours | 1:1 past the grace period (2 hours away ≈ 1.5 game-hours: "the evening went on"). |
+| Beyond that | 1:4 (a day away ≈ 10 game-hours; a week away ≈ 2 game-days). |
+| Any length | **Capped at 7 game-days** per absence. |
+
+- **Scene lock.** If the log ends mid-fight or inside a Showrunner-marked set-piece, no
+  game time passes at all regardless of absence; the scene resumes where it stopped.
+  Catch-up applies only when the last scene ended at a hinge (the Director's `sceneNote`
+  marks hinges; a `scene` or `caption` event is always one).
 - Catch-up events are generated only from the allowed list in §7 and are then summarized
-  as the "Previously on…" recap.
+  as the "Previously on…" recap. Short absences produce no recap.
+- The curve lives in `server/src/clock.ts`; the table above is the contract.
 
 ### 1.3 Calendar
 - Day/night palette: dawn 06:00, day 07:00, dusk 19:00, night 20:00 (game time). Night
@@ -195,33 +207,60 @@ defined default: heroes **capture** villains (custody at Raft, Ryker's or S.H.I.
 villains **leave** heroes (canon villains gloat and depart) unless the arc plan specifies
 capture of the hero. Downed heroes are then Hospitalized (severity roll per §3.1).
 
-### 5.2 Permadeath policy
+### 5.2 Death policy
+Death is real, rare, and never final. Comics logic applies: characters die on-panel when
+the story earns it, and they come back when a later story earns that too.
+
 - **Only the Showrunner may plan a death**, and only in an arc plan with an explicit
   `planned_death` field naming the character, the issue, the act, the mechanism, and the
-  canon justification. The Combat Engine can never kill. The Scene Director can never kill.
-  The Archivist can never record a death that was not planned.
+  canon justification. The Combat Engine can never kill (0 HP is Downed). The Scene
+  Director can never kill. The Archivist can never record a death that was not planned.
 - **Editor veto window.** A planned death appears in the Editor's Desk when the arc plan is
   submitted and is held for **24 real hours or until the Editor approves**, whichever is
   first. A veto removes the death and the Showrunner re-plans the climax. The arc cannot
   start its final act while a planned death is still in the window.
-- Applies equally to heroes, villains and supporting cast (`plot-armor` is implicit for
-  every named character). Named characters include anyone with a bible or a Codex entry.
+- Applies equally to heroes, villains and supporting cast. Named characters include anyone
+  with a bible or a Codex entry.
 - **Unnamed NPCs.** Mooks and civilians are **incapacitated**, not killed, by default. A
   villain with the `lethal-villain` trait (Red Skull) may kill unnamed mooks only in a scene
   the Showrunner has flagged `lethal: true` in the arc plan; the kill is rendered without
   gore (the Dust of Death's death's-head is the canonical exception) and logged. Unnamed
   civilians are never killed without a `planned_death`-style flag and the same veto window.
 - **No deaths off-panel.** Ever. See §7.
-- **Reversal.** A death may be reversed only by a later Showrunner-planned arc with a
-  canon-faithful mechanism (the Hand, Zola, Asgardian rebirth, a Doombot reveal planned in
-  advance), subject to the same veto window, and no sooner than three arcs after the death.
-  The Chronicle keeps both events.
+- **A dead character is absent, not deleted.** Their bible stays; their `state` becomes
+  `deceased` with the issue number. Other characters grieve, inherit, or move on, and the
+  Chronicle keeps a **Deaths and Returns ledger** that the Showrunner must read before
+  planning either.
+- **Resurrection is a legitimate story device**, planned like a death: `planned_return`
+  in an arc plan with a canon-faithful mechanism (the Hand, Asgardian rebirth, Zola, a clone,
+  a Doombot reveal seeded in advance, a cosmic bargain, a multiverse variant stepping in,
+  see §5.4), the same veto window, and no sooner than **two arcs** after the death. A return
+  always costs something (a changed power, a lost memory, a debt, a rival who knows). The
+  Chronicle keeps both events; nothing is retconned out of the log.
 
 ### 5.3 Custody
 Captured villains stay in custody for a minimum of one game-day and a maximum set by the
 Showrunner; escapes are **on-panel events only** and are planned as the opening of an arc
 or an incident the viewer watches. A villain's scheme meter continues at half rate in
 custody. Kingpin's organization standing ≥ 60 halves a villain's minimum custody.
+
+---
+
+### 5.4 Multiverse
+- **Earth-616 is prime.** Every launch character is the 616 version; `stats.json` carries
+  `"universe": "616"` by default.
+- **Variants are allowed** (Miles Morales, Spider-Gwen of Earth-65, Spider-Man 2099,
+  Ultimate versions, Old Man Logan, and so on). Each variant is its own character folder
+  with its own bible, its own `universe` tag, and its own `knows` set; a variant knows
+  nothing of 616 events unless learned on-panel.
+- **Arrival is always on-panel and Showrunner-planned**: an incursion, a portal, a Doom or
+  Strange experiment, a cosmic event. Variants may stay as roster members or depart at the
+  end of their arc. The Editor may request a variant like any roster addition.
+- **Variants do not undo 616 deaths.** A variant stepping into a dead hero's role is a
+  story about that, not a reset; the ledger records the 616 death and the variant's arrival
+  as separate events. A 616 return still follows §5.2.
+- Multiverse events are world-tier or higher and obey the same off-panel restrictions as
+  deaths: nothing crosses universes while you are not watching.
 
 ---
 

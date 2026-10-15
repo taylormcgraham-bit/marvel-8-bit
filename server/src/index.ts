@@ -18,6 +18,9 @@ const server = http.createServer((req, res) => {
     res.end(JSON.stringify({
       mode: run.mode,
       issue: run.world.issue,
+      gameTime: run.world.clock.label,
+      timeOfDay: run.world.timeOfDay,
+      sceneLocked: run.world.clock.sceneLocked,
       actors: [...run.world.actors.values()].map(({ character, ...a }) => a),
       events: run.world.events.length,
     }, null, 2));

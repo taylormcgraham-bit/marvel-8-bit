@@ -28,6 +28,7 @@ export const StatsSchema = z.object({
   factions: z.record(z.string(), z.number()).optional(),
   resources: z.record(z.string(), z.number().int()).optional(),
   leitmotif: z.string().optional(),
+  universe: z.string().default("616"),
 });
 export type Stats = z.infer<typeof StatsSchema>;
 

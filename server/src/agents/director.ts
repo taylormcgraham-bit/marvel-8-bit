@@ -77,7 +77,7 @@ export class Director {
     return `ISSUE #${world.issue.number}: ${world.issue.title}
 PREMISE: ${world.issue.premise}
 
-LOCATION: ${world.map.name}, ${world.timeOfDay}. ${world.map.flavor}
+LOCATION: ${world.map.name}. GAME TIME: ${world.clock.label} (${world.timeOfDay}). ${world.map.flavor}
 MARKERS:
 ${stage}
 

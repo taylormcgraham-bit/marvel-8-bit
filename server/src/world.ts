@@ -5,6 +5,7 @@ import type { MapDef } from "../../shared/maps.js";
 import type { Character } from "./canon.js";
 import { CONFIG } from "./config.js";
 import { Rng } from "./rng.js";
+import { Clock } from "./clock.js";
 
 export interface Actor {
   id: string;
@@ -25,6 +26,8 @@ export interface Issue {
   title: string;
   subtitle?: string;
   premise: string;
+  /** game-time ms (UTC-as-game-time) at which the issue opens */
+  startsAt: number;
   /** the Director's running private note, carried call to call */
   sceneNote: string;
 }
@@ -44,7 +47,7 @@ export class World {
   readonly events: GameEvent[] = [];
   readonly rng: Rng;
   issue: Issue;
-  timeOfDay: "dawn" | "day" | "dusk" | "night" = "night";
+  readonly clock: Clock;
   seq = 0;
   private logPath: string;
 
@@ -53,6 +56,7 @@ export class World {
     this.issue = issue;
     this.rng = new Rng(CONFIG.seed);
     fs.mkdirSync(CONFIG.dataDir, { recursive: true });
+    this.clock = new Clock(issue.startsAt);
     this.logPath = path.join(CONFIG.dataDir, "events.jsonl");
   }
 
@@ -76,6 +80,8 @@ export class World {
       case "note": return `[${e.level.toUpperCase()}] ${e.text}`;
     }
   }
+
+  get timeOfDay() { return this.clock.timeOfDay; }
 
   nameOf(id: string) { return this.actors.get(id)?.name ?? id; }
 
@@ -106,7 +112,6 @@ export class World {
         break;
       }
       case "rescue": { const a = this.actors.get(e.who); if (a) a.morale += 1; break; }
-      case "scene": this.timeOfDay = e.timeOfDay; break;
     }
     this.events.push(e);
     fs.appendFileSync(this.logPath, JSON.stringify(e) + "\n");
