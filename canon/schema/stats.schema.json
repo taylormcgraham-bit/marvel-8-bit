@@ -212,6 +212,71 @@
       "type": "string",
       "default": "616",
       "description": "Marvel universe designation. 616 is prime; variants (65, 1610, 2099, ...) are their own character folders."
+    },
+    "look": {
+      "type": "object",
+      "description": "How the procedural sprite rig draws this character until hand-drawn art exists.",
+      "additionalProperties": false,
+      "properties": {
+        "build": {
+          "type": "string",
+          "enum": [
+            "lean",
+            "normal",
+            "bulky",
+            "huge"
+          ]
+        },
+        "head": {
+          "type": "string",
+          "enum": [
+            "full-mask",
+            "cowl",
+            "helmet",
+            "face",
+            "hood",
+            "skull",
+            "horned-helm"
+          ]
+        },
+        "cape": {
+          "type": "boolean"
+        },
+        "emblem": {
+          "type": "boolean"
+        },
+        "twoTone": {
+          "type": "boolean",
+          "description": "secondary color on the legs (true) or only belt/trunks (false)"
+        },
+        "skin": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "hair": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "props": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "shield",
+              "hammer",
+              "tentacles",
+              "cane",
+              "club",
+              "satchel"
+            ]
+          }
+        },
+        "visor": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "description": "helmet faceplate color (helmet heads only)"
+        }
+      }
     }
   }
 }

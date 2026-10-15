@@ -150,5 +150,12 @@
   "leitmotif": "Bouncy, syncopated lead over a swinging bassline; drops to a lonely minor melody on rooftops.",
   "resources": {
     "web-fluid": 6
+  },
+  "look": {
+    "build": "lean",
+    "head": "full-mask",
+    "cape": false,
+    "emblem": true,
+    "twoTone": true
   }
 }

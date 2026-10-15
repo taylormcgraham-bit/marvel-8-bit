@@ -4,28 +4,201 @@
   "civilianName": "Otto Octavius",
   "role": "villain",
   "tier": "city",
-  "grid": { "int": 6, "str": 4, "spd": 3, "dur": 3, "nrg": 1, "fgt": 3 },
+  "grid": {
+    "int": 6,
+    "str": 4,
+    "spd": 3,
+    "dur": 3,
+    "nrg": 1,
+    "fgt": 3
+  },
   "traits": [
-    "tentacle-arms", "arm-subtargets", "mental-arm-control", "wall-climb", "genius-intellect",
-    "hostage-taker", "monologues", "fights-last", "fragile-body", "emp-vulnerable",
-    "glasses-dependent", "gentle-with-aunt-may", "resource-fissile-stock", "resource-arm-integrity"
+    "tentacle-arms",
+    "arm-subtargets",
+    "mental-arm-control",
+    "wall-climb",
+    "genius-intellect",
+    "hostage-taker",
+    "monologues",
+    "fights-last",
+    "fragile-body",
+    "emp-vulnerable",
+    "glasses-dependent",
+    "gentle-with-aunt-may",
+    "resource-fissile-stock",
+    "resource-arm-integrity"
   ],
   "moves": [
-    { "id": "tentacle-jab", "name": "Tentacle Jab", "kind": "light", "power": 3, "description": "A single arm snaps out to full extension and punches at long reach.", "tags": ["reach", "arm"] },
-    { "id": "tentacle-slam", "name": "Tentacle Slam", "kind": "heavy", "power": 6, "cost": "stamina:1", "description": "Two arms hammer down together with wrecking-ball force.", "tags": ["knockback", "arm"] },
-    { "id": "four-arm-lock", "name": "Four-Arm Lock", "kind": "control", "power": 4, "cost": "stamina:2", "description": "All four pincers seize a foe's limbs and hold them still for a round.", "tags": ["immobilize", "arm", "needs-4-arms"] },
-    { "id": "pincer-throw", "name": "Pincer Throw", "kind": "control", "power": 5, "description": "Grabs a foe and hurls them into a wall, car or lamppost.", "tags": ["throw", "environment", "arm"] },
-    { "id": "hostage-grip", "name": "Hostage Grip", "kind": "control", "power": 0, "description": "Seizes a civilian and dangles them; heroes with protects-civilians-first must spend a round on Rescue.", "tags": ["civilian", "hostage", "arm"] },
-    { "id": "debris-hurl", "name": "Debris Hurl", "kind": "ranged", "power": 4, "description": "Rips masonry or a vehicle loose and throws it.", "tags": ["environment", "collateral", "arm"] },
-    { "id": "arm-wall", "name": "Arm Wall", "kind": "defense", "power": 0, "description": "Braces the arms in front of his body to absorb the next ranged or heavy hit.", "tags": ["block", "arm"] },
-    { "id": "tower-rise", "name": "Tower Rise", "kind": "mobility", "power": 0, "description": "Lifts his body three stories on braced arms, out of melee reach.", "tags": ["reposition", "high-ground", "arm"] },
-    { "id": "wall-scuttle", "name": "Wall Scuttle", "kind": "mobility", "power": 0, "description": "Scuttles along a wall or ceiling to a new position.", "tags": ["reposition", "arm"] },
-    { "id": "recall-arms", "name": "Recall Arms", "kind": "utility", "power": 0, "description": "Mentally summons detached arms back to the harness and reconnects one.", "tags": ["repair", "self"] },
-    { "id": "neural-overclock", "name": "Neural Overclock", "kind": "utility", "power": 0, "cost": "arm-integrity:1", "description": "Pushes the harness past tolerance; his next two arm moves gain power and an arm loses integrity.", "tags": ["buff", "self", "desperate"] },
-    { "id": "master-plan", "name": "Master Plan", "kind": "ultimate", "power": 9, "cost": "stamina:3", "description": "Triggers a pre-rigged collapse that buries everyone in the marked zone; only usable in an arena he prepared.", "tags": ["environment", "collateral", "area", "prepared-only"] }
+    {
+      "id": "tentacle-jab",
+      "name": "Tentacle Jab",
+      "kind": "light",
+      "power": 3,
+      "description": "A single arm snaps out to full extension and punches at long reach.",
+      "tags": [
+        "reach",
+        "arm"
+      ]
+    },
+    {
+      "id": "tentacle-slam",
+      "name": "Tentacle Slam",
+      "kind": "heavy",
+      "power": 6,
+      "cost": "stamina:1",
+      "description": "Two arms hammer down together with wrecking-ball force.",
+      "tags": [
+        "knockback",
+        "arm"
+      ]
+    },
+    {
+      "id": "four-arm-lock",
+      "name": "Four-Arm Lock",
+      "kind": "control",
+      "power": 4,
+      "cost": "stamina:2",
+      "description": "All four pincers seize a foe's limbs and hold them still for a round.",
+      "tags": [
+        "immobilize",
+        "arm",
+        "needs-4-arms"
+      ]
+    },
+    {
+      "id": "pincer-throw",
+      "name": "Pincer Throw",
+      "kind": "control",
+      "power": 5,
+      "description": "Grabs a foe and hurls them into a wall, car or lamppost.",
+      "tags": [
+        "throw",
+        "environment",
+        "arm"
+      ]
+    },
+    {
+      "id": "hostage-grip",
+      "name": "Hostage Grip",
+      "kind": "control",
+      "power": 0,
+      "description": "Seizes a civilian and dangles them; heroes with protects-civilians-first must spend a round on Rescue.",
+      "tags": [
+        "civilian",
+        "hostage",
+        "arm"
+      ]
+    },
+    {
+      "id": "debris-hurl",
+      "name": "Debris Hurl",
+      "kind": "ranged",
+      "power": 4,
+      "description": "Rips masonry or a vehicle loose and throws it.",
+      "tags": [
+        "environment",
+        "collateral",
+        "arm"
+      ]
+    },
+    {
+      "id": "arm-wall",
+      "name": "Arm Wall",
+      "kind": "defense",
+      "power": 0,
+      "description": "Braces the arms in front of his body to absorb the next ranged or heavy hit.",
+      "tags": [
+        "block",
+        "arm"
+      ]
+    },
+    {
+      "id": "tower-rise",
+      "name": "Tower Rise",
+      "kind": "mobility",
+      "power": 0,
+      "description": "Lifts his body three stories on braced arms, out of melee reach.",
+      "tags": [
+        "reposition",
+        "high-ground",
+        "arm"
+      ]
+    },
+    {
+      "id": "wall-scuttle",
+      "name": "Wall Scuttle",
+      "kind": "mobility",
+      "power": 0,
+      "description": "Scuttles along a wall or ceiling to a new position.",
+      "tags": [
+        "reposition",
+        "arm"
+      ]
+    },
+    {
+      "id": "recall-arms",
+      "name": "Recall Arms",
+      "kind": "utility",
+      "power": 0,
+      "description": "Mentally summons detached arms back to the harness and reconnects one.",
+      "tags": [
+        "repair",
+        "self"
+      ]
+    },
+    {
+      "id": "neural-overclock",
+      "name": "Neural Overclock",
+      "kind": "utility",
+      "power": 0,
+      "cost": "arm-integrity:1",
+      "description": "Pushes the harness past tolerance; his next two arm moves gain power and an arm loses integrity.",
+      "tags": [
+        "buff",
+        "self",
+        "desperate"
+      ]
+    },
+    {
+      "id": "master-plan",
+      "name": "Master Plan",
+      "kind": "ultimate",
+      "power": 9,
+      "cost": "stamina:3",
+      "description": "Triggers a pre-rigged collapse that buries everyone in the marked zone; only usable in an arena he prepared.",
+      "tags": [
+        "environment",
+        "collateral",
+        "area",
+        "prepared-only"
+      ]
+    }
   ],
-  "palette": { "primary": "#007800", "secondary": "#fc9838", "accent": "#bcbcbc" },
+  "palette": {
+    "primary": "#007800",
+    "secondary": "#fc9838",
+    "accent": "#bcbcbc"
+  },
   "homeLocation": "midtown-manhattan",
-  "factions": { "public-opinion": -70, "nypd": -90, "shield": -80, "daily-bugle": -30, "kingpin-org": 20, "hydra": -10, "latveria": 10 },
-  "leitmotif": "Low, mechanical four-note ostinato in a minor key, each note a different arm; a pompous brass-style lead over it that cracks into dissonance when an arm is lost."
+  "factions": {
+    "public-opinion": -70,
+    "nypd": -90,
+    "shield": -80,
+    "daily-bugle": -30,
+    "kingpin-org": 20,
+    "hydra": -10,
+    "latveria": 10
+  },
+  "leitmotif": "Low, mechanical four-note ostinato in a minor key, each note a different arm; a pompous brass-style lead over it that cracks into dissonance when an arm is lost.",
+  "look": {
+    "build": "bulky",
+    "head": "face",
+    "cape": false,
+    "emblem": false,
+    "twoTone": true,
+    "hair": "#3a2a20",
+    "props": [
+      "tentacles"
+    ]
+  }
 }

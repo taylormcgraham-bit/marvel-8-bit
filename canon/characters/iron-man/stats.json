@@ -4,28 +4,199 @@
   "civilianName": "Tony Stark",
   "role": "hero",
   "tier": "world",
-  "grid": { "int": 6, "str": 6, "spd": 5, "dur": 6, "nrg": 6, "fgt": 4 },
+  "grid": {
+    "int": 6,
+    "str": 6,
+    "spd": 5,
+    "dur": 6,
+    "nrg": 6,
+    "fgt": 4
+  },
   "traits": [
-    "powered-armor", "flight", "resource-armor-power", "genius-engineer", "scan-and-adapt",
-    "emp-vulnerable", "magic-blind", "public-identity", "lethal-force-last-resort",
-    "recovering-alcoholic", "remote-armor-summon", "pragmatist"
+    "powered-armor",
+    "flight",
+    "resource-armor-power",
+    "genius-engineer",
+    "scan-and-adapt",
+    "emp-vulnerable",
+    "magic-blind",
+    "public-identity",
+    "lethal-force-last-resort",
+    "recovering-alcoholic",
+    "remote-armor-summon",
+    "pragmatist"
   ],
   "moves": [
-    { "id": "repulsor-blast", "name": "Repulsor Blast", "kind": "ranged", "power": 4, "cost": "armor-power:3", "description": "Palm repulsor shot, scalable from stun to melting steel.", "tags": ["energy"] },
-    { "id": "repulsor-barrage", "name": "Repulsor Barrage", "kind": "ranged", "power": 5, "cost": "armor-power:6", "description": "Both palms sweeping across multiple targets.", "tags": ["energy", "multi-target"] },
-    { "id": "unibeam", "name": "Unibeam", "kind": "heavy", "power": 8, "cost": "armor-power:20", "description": "Chest-mounted beam that hits everything in a line; his biggest single shot.", "tags": ["energy", "line", "knockback"] },
-    { "id": "armored-strike", "name": "Armored Strike", "kind": "heavy", "power": 6, "cost": "armor-power:2", "description": "Servo-assisted punch that dents Doom's armor.", "tags": ["knockback"] },
-    { "id": "flight-dash", "name": "Flight Dash", "kind": "mobility", "power": 2, "cost": "armor-power:4", "description": "Boot-repulsor burst to close distance, gain altitude, or escape.", "tags": ["gap-closer", "reposition", "aerial"] },
-    { "id": "energy-shield", "name": "Energy Shield", "kind": "defense", "power": 0, "cost": "armor-power:8", "description": "Shaped force field that stops one big hit; cannot attack the same round.", "tags": ["block"] },
-    { "id": "scan", "name": "Scan", "kind": "utility", "power": 0, "cost": "armor-power:1", "description": "Spends the round analyzing a target, revealing a weakness and granting Intel; useless against magic.", "tags": ["intel", "reveal-weakness"] },
-    { "id": "emp-pulse", "name": "EMP Pulse", "kind": "control", "power": 3, "cost": "armor-power:10", "description": "Disables nearby tech and vehicles for a round; risks his own systems.", "tags": ["disable", "area", "self-risk"] },
-    { "id": "magnetic-grapple", "name": "Magnetic Grapple", "kind": "control", "power": 3, "cost": "armor-power:4", "description": "Pulls or pins a metal foe or object into place.", "tags": ["immobilize", "pull"] },
-    { "id": "micro-missiles", "name": "Micro-Missiles", "kind": "ranged", "power": 5, "cost": "armor-power:5", "description": "Shoulder-launched munitions that wreck cover and vehicles.", "tags": ["explosive", "environment"] },
-    { "id": "summon-spare-armor", "name": "Summon Spare Armor", "kind": "utility", "power": 0, "cost": "spare-suit:1", "description": "Calls a spare suit from the Tower to restore armor power; once per fight.", "tags": ["resource", "once-per-fight"] },
-    { "id": "rescue", "name": "Rescue", "kind": "rescue", "power": 0, "cost": "armor-power:3", "description": "Flies a civilian or downed ally clear of the fight; raises morale.", "tags": ["civilian", "aerial"] }
+    {
+      "id": "repulsor-blast",
+      "name": "Repulsor Blast",
+      "kind": "ranged",
+      "power": 4,
+      "cost": "armor-power:3",
+      "description": "Palm repulsor shot, scalable from stun to melting steel.",
+      "tags": [
+        "energy"
+      ]
+    },
+    {
+      "id": "repulsor-barrage",
+      "name": "Repulsor Barrage",
+      "kind": "ranged",
+      "power": 5,
+      "cost": "armor-power:6",
+      "description": "Both palms sweeping across multiple targets.",
+      "tags": [
+        "energy",
+        "multi-target"
+      ]
+    },
+    {
+      "id": "unibeam",
+      "name": "Unibeam",
+      "kind": "heavy",
+      "power": 8,
+      "cost": "armor-power:20",
+      "description": "Chest-mounted beam that hits everything in a line; his biggest single shot.",
+      "tags": [
+        "energy",
+        "line",
+        "knockback"
+      ]
+    },
+    {
+      "id": "armored-strike",
+      "name": "Armored Strike",
+      "kind": "heavy",
+      "power": 6,
+      "cost": "armor-power:2",
+      "description": "Servo-assisted punch that dents Doom's armor.",
+      "tags": [
+        "knockback"
+      ]
+    },
+    {
+      "id": "flight-dash",
+      "name": "Flight Dash",
+      "kind": "mobility",
+      "power": 2,
+      "cost": "armor-power:4",
+      "description": "Boot-repulsor burst to close distance, gain altitude, or escape.",
+      "tags": [
+        "gap-closer",
+        "reposition",
+        "aerial"
+      ]
+    },
+    {
+      "id": "energy-shield",
+      "name": "Energy Shield",
+      "kind": "defense",
+      "power": 0,
+      "cost": "armor-power:8",
+      "description": "Shaped force field that stops one big hit; cannot attack the same round.",
+      "tags": [
+        "block"
+      ]
+    },
+    {
+      "id": "scan",
+      "name": "Scan",
+      "kind": "utility",
+      "power": 0,
+      "cost": "armor-power:1",
+      "description": "Spends the round analyzing a target, revealing a weakness and granting Intel; useless against magic.",
+      "tags": [
+        "intel",
+        "reveal-weakness"
+      ]
+    },
+    {
+      "id": "emp-pulse",
+      "name": "EMP Pulse",
+      "kind": "control",
+      "power": 3,
+      "cost": "armor-power:10",
+      "description": "Disables nearby tech and vehicles for a round; risks his own systems.",
+      "tags": [
+        "disable",
+        "area",
+        "self-risk"
+      ]
+    },
+    {
+      "id": "magnetic-grapple",
+      "name": "Magnetic Grapple",
+      "kind": "control",
+      "power": 3,
+      "cost": "armor-power:4",
+      "description": "Pulls or pins a metal foe or object into place.",
+      "tags": [
+        "immobilize",
+        "pull"
+      ]
+    },
+    {
+      "id": "micro-missiles",
+      "name": "Micro-Missiles",
+      "kind": "ranged",
+      "power": 5,
+      "cost": "armor-power:5",
+      "description": "Shoulder-launched munitions that wreck cover and vehicles.",
+      "tags": [
+        "explosive",
+        "environment"
+      ]
+    },
+    {
+      "id": "summon-spare-armor",
+      "name": "Summon Spare Armor",
+      "kind": "utility",
+      "power": 0,
+      "cost": "spare-suit:1",
+      "description": "Calls a spare suit from the Tower to restore armor power; once per fight.",
+      "tags": [
+        "resource",
+        "once-per-fight"
+      ]
+    },
+    {
+      "id": "rescue",
+      "name": "Rescue",
+      "kind": "rescue",
+      "power": 0,
+      "cost": "armor-power:3",
+      "description": "Flies a civilian or downed ally clear of the fight; raises morale.",
+      "tags": [
+        "civilian",
+        "aerial"
+      ]
+    }
   ],
-  "palette": { "primary": "#a80020", "secondary": "#f8b800", "accent": "#3cbcfc" },
+  "palette": {
+    "primary": "#a80020",
+    "secondary": "#f8b800",
+    "accent": "#3cbcfc"
+  },
   "homeLocation": "avengers-tower",
-  "factions": { "public-opinion": 55, "nypd": 40, "daily-bugle": 10, "shield": 50, "hydra": -80, "latveria": -60, "asgard": 30, "wakanda": 40, "hellfire-club": -30, "kingpin-org": -50 },
-  "leitmotif": "Driving arpeggiated synth over a hard-rock pulse; thins to a single ticking pulse when armor power runs low."
+  "factions": {
+    "public-opinion": 55,
+    "nypd": 40,
+    "daily-bugle": 10,
+    "shield": 50,
+    "hydra": -80,
+    "latveria": -60,
+    "asgard": 30,
+    "wakanda": 40,
+    "hellfire-club": -30,
+    "kingpin-org": -50
+  },
+  "leitmotif": "Driving arpeggiated synth over a hard-rock pulse; thins to a single ticking pulse when armor power runs low.",
+  "look": {
+    "build": "bulky",
+    "head": "helmet",
+    "cape": false,
+    "emblem": false,
+    "twoTone": false,
+    "visor": "#f8b800"
+  }
 }

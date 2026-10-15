@@ -1,8 +1,17 @@
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const here = path.dirname(fileURLToPath(import.meta.url));
-export const ROOT = path.resolve(here, "../..");
+/** Project root: the nearest ancestor with a package.json. Works from server/src (dev) and dist/server/src (prod). */
+function findRoot(from: string): string {
+  let dir = from;
+  for (let i = 0; i < 6; i++) {
+    if (fs.existsSync(path.join(dir, "package.json"))) return dir;
+    dir = path.dirname(dir);
+  }
+  return process.cwd();
+}
+export const ROOT = process.env.APP_ROOT ?? findRoot(path.dirname(fileURLToPath(import.meta.url)));
 
 export const CONFIG = {
   port: Number(process.env.PORT ?? 8787),

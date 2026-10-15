@@ -40,7 +40,7 @@ export class Engine {
     this.world.actors.set(c.id, actor);
     const e: GameEvent = {
       type: "spawn", ...this.base(400), who: c.id, name: c.stats.name, at: m.id, x: m.x, y: m.y, facing,
-      hp: actor.hp, maxHp: actor.maxHp, palette: c.stats.palette, role: c.stats.role,
+      hp: actor.hp, maxHp: actor.maxHp, palette: c.stats.palette, role: c.stats.role, look: c.stats.look,
     };
     this.world.apply(e);
     return e;

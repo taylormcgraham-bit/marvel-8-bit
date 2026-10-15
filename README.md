@@ -17,12 +17,40 @@ npm run dev                 # engine on :8787, theater on http://localhost:5173
 With no credentials the engine falls back to a scripted mock Director, so the theater
 always plays something. Set `MOCK=1` to force it.
 
-- Press `` ` `` in the theater for the engine console (rejections, continuity notes).
+- Press `` ` `` in the theater for the engine console (rejections, continuity notes). Press `C` to toggle scanlines.
+- `http://localhost:5173/?showcase` spawns the whole roster for art review.
 - `http://localhost:8787/api/chronicle` is the running transcript of everything that happened.
 - `http://localhost:8787/api/state` is the live world state.
 - Drop a `.md` note in `inbox/` and the Director reads it on its next call (see `inbox/README.md`).
 - `npm run validate:canon` checks every character folder against the schema.
 - `npm run reset` wipes the event log and starts the issue fresh.
+
+## Where this lives, and what you need
+
+**Right now it is code in this GitHub repo, on the branch `claude/ai-marvel-game-concept-u7pdj9`.
+Nothing is hosted and nothing is running anywhere.** It runs on your own computer with the
+three commands above, and the browser tab is the game.
+
+You need:
+
+1. **Node.js 22 or newer** on your machine (nodejs.org).
+2. **An Anthropic API key** from console.anthropic.com, in `.env` as `ANTHROPIC_API_KEY`.
+   Without one the engine runs the scripted mock Director so you can still see the theater.
+3. **This repo cloned**, then `npm install` and `npm run dev`. Open `http://localhost:5173`.
+
+To put it online so you can open it from your phone, the repo ships a `Dockerfile` and a
+`fly.toml`. On Fly.io (or Railway, Render, any Docker host):
+
+```bash
+fly launch --copy-config --no-deploy
+fly secrets set ANTHROPIC_API_KEY=sk-ant-... AUTH_PASSWORD=choose-a-password
+fly volumes create data --size 1      # keeps the event log and clock between deploys
+fly deploy
+```
+
+`AUTH_PASSWORD` puts a browser password prompt in front of the whole thing, which is all
+the security a single-viewer private site needs. The machine stops when nobody is
+connected and starts on the next visit, which matches how the world itself works.
 
 ## Where things live
 
@@ -34,7 +62,9 @@ always plays something. Set `MOCK=1` to force it.
 | `canon/schema/` | JSON schema for `stats.json` |
 | `shared/` | The event contract (`events.ts`) and map definitions, imported by both sides |
 | `server/src/` | The engine: world state, beat resolution, the Bullpen agents, pacing loop, WebSocket |
-| `client/src/` | The theater: Phaser 3 playback of events with procedural NES-style art |
+| `client/src/` | The theater: Phaser 3 playback of events with procedural 16-bit art (`render/`) |
+| `client/public/assets/` | Hand-drawn art drop zone and its `manifest.json` (see `docs/ART.md`) |
+| `docs/ART.md` | Art direction, the sprite sheet contract, and the three routes to real art |
 | `inbox/` | The Editor's Desk |
 | `data/` | Event log (`events.jsonl`), generated at runtime, git-ignored |
 
@@ -55,6 +85,7 @@ Generation only happens while a theater is connected and its playback buffer is 
 
 ## Status
 
-Phase 1 (Theater) is playable: one rooftop map, the launch cast, live Director with
-prompt-cached bibles, deterministic combat resolution, an event log, the Editor's inbox.
-See the roadmap in `docs/DESIGN.md` for what comes next.
+Phase 0 (canon) and Phase 1 (Theater) are done: one rooftop map, the launch cast, live
+Director with prompt-cached bibles, deterministic combat resolution, a persistent game
+clock, an event log, the Editor's inbox, procedural 16-bit art with a drop-in pipeline for
+hand-drawn sheets. See the roadmap in `docs/DESIGN.md` for what comes next.

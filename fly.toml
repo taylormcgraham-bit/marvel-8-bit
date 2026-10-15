@@ -1,0 +1,22 @@
+# fly.io deployment: `fly launch --copy-config --no-deploy`, then
+#   fly secrets set ANTHROPIC_API_KEY=... AUTH_PASSWORD=...
+#   fly volumes create data --size 1
+#   fly deploy
+app = "marvel-8-bit"
+primary_region = "iad"
+
+[build]
+
+[env]
+  PORT = "8787"
+
+[http_service]
+  internal_port = 8787
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[mounts]]
+  source = "data"
+  destination = "/app/data"

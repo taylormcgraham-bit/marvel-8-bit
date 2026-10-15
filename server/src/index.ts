@@ -5,13 +5,31 @@ import { WebSocketServer, WebSocket } from "ws";
 import { ClientMsg, type ServerMsg } from "../../shared/events.js";
 import { CONFIG } from "./config.js";
 import { Showrunner } from "./showrunner.js";
+import { listCharacterIds, loadCharacter } from "./canon.js";
+import { maxHpFor } from "./world.js";
 
 const run = new Showrunner();
 run.start();
 
 const MIME: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".png": "image/png", ".json": "application/json" };
 
+/** Optional password gate for a hosted deployment: set AUTH_PASSWORD (user name is anything). */
+function authorized(req: http.IncomingMessage): boolean {
+  const want = process.env.AUTH_PASSWORD;
+  if (!want) return true;
+  const h = req.headers.authorization ?? "";
+  if (!h.startsWith("Basic ")) return false;
+  const decoded = Buffer.from(h.slice(6), "base64").toString("utf8");
+  return decoded.slice(decoded.indexOf(":") + 1) === want;
+}
+
 const server = http.createServer((req, res) => {
+  if (!authorized(req)) {
+    res.statusCode = 401;
+    res.setHeader("WWW-Authenticate", 'Basic realm="marvel-8-bit"');
+    res.end("password required");
+    return;
+  }
   const url = new URL(req.url ?? "/", "http://localhost");
   if (url.pathname === "/api/state") {
     res.setHeader("content-type", "application/json");
@@ -24,6 +42,18 @@ const server = http.createServer((req, res) => {
       actors: [...run.world.actors.values()].map(({ character, ...a }) => a),
       events: run.world.events.length,
     }, null, 2));
+    return;
+  }
+  if (url.pathname === "/api/roster") {
+    // every character in canon as spawn events, for the theater's showcase mode (art review)
+    const markers = run.world.map.markers;
+    const list = listCharacterIds().map((id, i) => {
+      const c = loadCharacter(id)!; const m = markers[i % markers.length]!;
+      const hp = maxHpFor(c);
+      return { type: "spawn", seq: 0, t: Date.now(), ms: 150, who: id, name: c.stats.name, at: m.id, x: m.x, y: m.y, facing: "down", hp, maxHp: hp, palette: c.stats.palette, role: c.stats.role, look: c.stats.look };
+    });
+    res.setHeader("content-type", "application/json");
+    res.end(JSON.stringify(list));
     return;
   }
   if (url.pathname === "/api/chronicle") {
@@ -46,7 +76,7 @@ const server = http.createServer((req, res) => {
   fs.createReadStream(file).pipe(res);
 });
 
-const wss = new WebSocketServer({ server, path: "/ws" });
+const wss = new WebSocketServer({ server, path: "/ws", verifyClient: (info: { req: http.IncomingMessage }) => authorized(info.req) });
 
 function send(ws: WebSocket, msg: ServerMsg) {
   if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));

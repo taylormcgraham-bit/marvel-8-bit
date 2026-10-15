@@ -4,27 +4,186 @@
   "civilianName": "Wilson Fisk",
   "role": "villain",
   "tier": "street",
-  "grid": { "int": 4, "str": 3, "spd": 2, "dur": 3, "nrg": 1, "fgt": 5 },
+  "grid": {
+    "int": 4,
+    "str": 3,
+    "spd": 2,
+    "dur": 3,
+    "nrg": 1,
+    "fgt": 5
+  },
   "traits": [
-    "peak-human", "grappler", "strategic-tier-world", "never-raises-voice", "business-honor",
-    "never-takes-the-field", "knows-daredevil-identity", "protects-family",
-    "resource-cover-intact", "resource-war-chest", "resource-leverage-files", "fears-public-exposure"
+    "peak-human",
+    "grappler",
+    "strategic-tier-world",
+    "never-raises-voice",
+    "business-honor",
+    "never-takes-the-field",
+    "knows-daredevil-identity",
+    "protects-family",
+    "resource-cover-intact",
+    "resource-war-chest",
+    "resource-leverage-files",
+    "fears-public-exposure"
   ],
   "moves": [
-    { "id": "bear-hug", "name": "Bear Hug", "kind": "control", "power": 6, "description": "Wraps a foe in his arms and squeezes; held foes take crush damage each round until they break free.", "tags": ["grab", "crush", "immobilize"] },
-    { "id": "palm-strike", "name": "Palm Strike", "kind": "heavy", "power": 5, "description": "Sumo open-hand blow that sends a man across the office.", "tags": ["knockback"] },
-    { "id": "desk-throw", "name": "Desk Throw", "kind": "heavy", "power": 6, "cost": "stamina:1", "description": "Hurls a desk, a safe or a bodyguard at the target.", "tags": ["environment", "knockback"] },
-    { "id": "cane-laser", "name": "Cane Laser", "kind": "ranged", "power": 4, "cost": "cane-charge:1", "description": "A beam from the obsidian handle; one charge per scene.", "tags": ["gadget", "once-per-scene"] },
-    { "id": "sleeping-gas", "name": "Sleeping Gas", "kind": "control", "power": 3, "cost": "cane-charge:1", "description": "Gas from the cane or stickpin that staggers everyone in reach; one charge per scene.", "tags": ["gadget", "stun", "once-per-scene"] },
-    { "id": "absorb-blow", "name": "Absorb Blow", "kind": "defense", "power": 0, "description": "Takes the hit on his bulk and does not move.", "tags": ["block", "no-knockback"] },
-    { "id": "call-the-guards", "name": "Call the Guards", "kind": "utility", "power": 0, "description": "Summons armed muscle into the room next round.", "tags": ["minion", "summon"] },
-    { "id": "send-bullseye", "name": "Send Bullseye", "kind": "utility", "power": 0, "cost": "war-chest:2", "description": "Deploys an assassin against the target in the following scene.", "tags": ["assassin", "off-panel", "strategic"] },
-    { "id": "buy-the-cop", "name": "Buy the Cop", "kind": "utility", "power": 0, "cost": "war-chest:1", "description": "Shifts NYPD standing in his favor and against a hero for the arc.", "tags": ["faction", "strategic"] },
-    { "id": "leverage", "name": "Leverage", "kind": "utility", "power": 0, "cost": "leverage-files:1", "description": "Spends a file to end the confrontation without a fight; the hero leaves.", "tags": ["blackmail", "strategic", "ends-scene"] },
-    { "id": "quiet-word", "name": "Quiet Word", "kind": "control", "power": 3, "description": "Tells a hero exactly what he knows about their life; lowers their morale for the fight.", "tags": ["demoralize", "dialogue"] }
+    {
+      "id": "bear-hug",
+      "name": "Bear Hug",
+      "kind": "control",
+      "power": 6,
+      "description": "Wraps a foe in his arms and squeezes; held foes take crush damage each round until they break free.",
+      "tags": [
+        "grab",
+        "crush",
+        "immobilize"
+      ]
+    },
+    {
+      "id": "palm-strike",
+      "name": "Palm Strike",
+      "kind": "heavy",
+      "power": 5,
+      "description": "Sumo open-hand blow that sends a man across the office.",
+      "tags": [
+        "knockback"
+      ]
+    },
+    {
+      "id": "desk-throw",
+      "name": "Desk Throw",
+      "kind": "heavy",
+      "power": 6,
+      "cost": "stamina:1",
+      "description": "Hurls a desk, a safe or a bodyguard at the target.",
+      "tags": [
+        "environment",
+        "knockback"
+      ]
+    },
+    {
+      "id": "cane-laser",
+      "name": "Cane Laser",
+      "kind": "ranged",
+      "power": 4,
+      "cost": "cane-charge:1",
+      "description": "A beam from the obsidian handle; one charge per scene.",
+      "tags": [
+        "gadget",
+        "once-per-scene"
+      ]
+    },
+    {
+      "id": "sleeping-gas",
+      "name": "Sleeping Gas",
+      "kind": "control",
+      "power": 3,
+      "cost": "cane-charge:1",
+      "description": "Gas from the cane or stickpin that staggers everyone in reach; one charge per scene.",
+      "tags": [
+        "gadget",
+        "stun",
+        "once-per-scene"
+      ]
+    },
+    {
+      "id": "absorb-blow",
+      "name": "Absorb Blow",
+      "kind": "defense",
+      "power": 0,
+      "description": "Takes the hit on his bulk and does not move.",
+      "tags": [
+        "block",
+        "no-knockback"
+      ]
+    },
+    {
+      "id": "call-the-guards",
+      "name": "Call the Guards",
+      "kind": "utility",
+      "power": 0,
+      "description": "Summons armed muscle into the room next round.",
+      "tags": [
+        "minion",
+        "summon"
+      ]
+    },
+    {
+      "id": "send-bullseye",
+      "name": "Send Bullseye",
+      "kind": "utility",
+      "power": 0,
+      "cost": "war-chest:2",
+      "description": "Deploys an assassin against the target in the following scene.",
+      "tags": [
+        "assassin",
+        "off-panel",
+        "strategic"
+      ]
+    },
+    {
+      "id": "buy-the-cop",
+      "name": "Buy the Cop",
+      "kind": "utility",
+      "power": 0,
+      "cost": "war-chest:1",
+      "description": "Shifts NYPD standing in his favor and against a hero for the arc.",
+      "tags": [
+        "faction",
+        "strategic"
+      ]
+    },
+    {
+      "id": "leverage",
+      "name": "Leverage",
+      "kind": "utility",
+      "power": 0,
+      "cost": "leverage-files:1",
+      "description": "Spends a file to end the confrontation without a fight; the hero leaves.",
+      "tags": [
+        "blackmail",
+        "strategic",
+        "ends-scene"
+      ]
+    },
+    {
+      "id": "quiet-word",
+      "name": "Quiet Word",
+      "kind": "control",
+      "power": 3,
+      "description": "Tells a hero exactly what he knows about their life; lowers their morale for the fight.",
+      "tags": [
+        "demoralize",
+        "dialogue"
+      ]
+    }
   ],
-  "palette": { "primary": "#fcfcfc", "secondary": "#940084", "accent": "#f8b800" },
+  "palette": {
+    "primary": "#fcfcfc",
+    "secondary": "#940084",
+    "accent": "#f8b800"
+  },
   "homeLocation": "fisk-tower",
-  "factions": { "public-opinion": 10, "nypd": 30, "daily-bugle": -70, "shield": -50, "kingpin-org": 100, "hydra": -30, "latveria": -10 },
-  "leitmotif": "Slow, heavy bass ostinato under sparse high piano notes; silence between phrases does the work."
+  "factions": {
+    "public-opinion": 10,
+    "nypd": 30,
+    "daily-bugle": -70,
+    "shield": -50,
+    "kingpin-org": 100,
+    "hydra": -30,
+    "latveria": -10
+  },
+  "leitmotif": "Slow, heavy bass ostinato under sparse high piano notes; silence between phrases does the work.",
+  "look": {
+    "build": "huge",
+    "head": "face",
+    "cape": false,
+    "emblem": false,
+    "twoTone": false,
+    "skin": "#f0c0a0",
+    "hair": "#f0c0a0",
+    "props": [
+      "cane"
+    ]
+  }
 }

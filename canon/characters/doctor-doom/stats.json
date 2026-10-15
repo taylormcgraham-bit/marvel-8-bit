@@ -4,27 +4,186 @@
   "civilianName": "Victor von Doom",
   "role": "villain",
   "tier": "world",
-  "grid": { "int": 6, "str": 4, "spd": 3, "dur": 6, "nrg": 6, "fgt": 4 },
+  "grid": {
+    "int": 6,
+    "str": 4,
+    "spd": 3,
+    "dur": 6,
+    "nrg": 6,
+    "fgt": 4
+  },
   "traits": [
-    "armored", "flight", "force-field", "sorcery", "genius-inventor", "oath-bound",
-    "hospitality-code", "accepts-surrender", "never-kneels", "monologues", "head-of-state",
-    "resource-armor-power", "resource-doombots", "doombot-ambiguity", "no-retreat-before-witnesses"
+    "armored",
+    "flight",
+    "force-field",
+    "sorcery",
+    "genius-inventor",
+    "oath-bound",
+    "hospitality-code",
+    "accepts-surrender",
+    "never-kneels",
+    "monologues",
+    "head-of-state",
+    "resource-armor-power",
+    "resource-doombots",
+    "doombot-ambiguity",
+    "no-retreat-before-witnesses"
   ],
   "moves": [
-    { "id": "gauntlet-blast", "name": "Gauntlet Blast", "kind": "ranged", "power": 6, "cost": "armor-power:2", "description": "Concussive energy from the gauntlets, enough to stagger the Thing.", "tags": ["energy", "knockback"] },
-    { "id": "force-field", "name": "Force Field", "kind": "defense", "power": 0, "cost": "armor-power:2", "description": "Personal shield that absorbs hits until three heavy blows in two rounds collapse it.", "tags": ["block", "collapses"] },
-    { "id": "mystic-bolt", "name": "Mystic Bolt", "kind": "ranged", "power": 7, "cost": "stamina:2", "description": "Sorcerous blast; requires speech and marks this as the true Doom.", "tags": ["magic", "true-doom-only"] },
-    { "id": "binding-ward", "name": "Binding Ward", "kind": "control", "power": 4, "cost": "stamina:2", "description": "Spoken ward that roots a foe in place for a round.", "tags": ["magic", "immobilize", "true-doom-only"] },
-    { "id": "jet-boots", "name": "Jet Boots", "kind": "mobility", "power": 0, "cost": "armor-power:1", "description": "Rises above the melee to a balcony or ledge.", "tags": ["flight", "reposition"] },
-    { "id": "electrified-grapple", "name": "Electrified Grapple", "kind": "heavy", "power": 7, "cost": "armor-power:2", "description": "Seizes a foe and discharges the armor's shell into them.", "tags": ["shock", "close"] },
-    { "id": "backhand", "name": "Backhand", "kind": "light", "power": 4, "description": "A contemptuous armored slap that sends a man across the room.", "tags": ["knockback"] },
-    { "id": "doombot-decoy", "name": "Doombot Decoy", "kind": "utility", "power": 0, "cost": "doombots:1", "description": "A Doombot takes his position; the Doom on the field may no longer be the true one.", "tags": ["decoy", "ambiguity"] },
-    { "id": "castle-defenses", "name": "Castle Defenses", "kind": "control", "power": 5, "description": "Turrets, traps and gas in Castle Doom; home arena only.", "tags": ["environment", "home-only"] },
-    { "id": "time-platform", "name": "Time Platform Displacement", "kind": "ultimate", "power": 9, "cost": "armor-power:4", "description": "Shunts a foe out of the fight for two rounds; once per arc.", "tags": ["once-per-arc", "banish"] },
-    { "id": "offer-of-surrender", "name": "Offer of Surrender", "kind": "utility", "power": 0, "description": "Spends the round demanding the foe kneel; a refusal steels his resolve, an acceptance ends his attacks.", "tags": ["honor-code", "monologue"] }
+    {
+      "id": "gauntlet-blast",
+      "name": "Gauntlet Blast",
+      "kind": "ranged",
+      "power": 6,
+      "cost": "armor-power:2",
+      "description": "Concussive energy from the gauntlets, enough to stagger the Thing.",
+      "tags": [
+        "energy",
+        "knockback"
+      ]
+    },
+    {
+      "id": "force-field",
+      "name": "Force Field",
+      "kind": "defense",
+      "power": 0,
+      "cost": "armor-power:2",
+      "description": "Personal shield that absorbs hits until three heavy blows in two rounds collapse it.",
+      "tags": [
+        "block",
+        "collapses"
+      ]
+    },
+    {
+      "id": "mystic-bolt",
+      "name": "Mystic Bolt",
+      "kind": "ranged",
+      "power": 7,
+      "cost": "stamina:2",
+      "description": "Sorcerous blast; requires speech and marks this as the true Doom.",
+      "tags": [
+        "magic",
+        "true-doom-only"
+      ]
+    },
+    {
+      "id": "binding-ward",
+      "name": "Binding Ward",
+      "kind": "control",
+      "power": 4,
+      "cost": "stamina:2",
+      "description": "Spoken ward that roots a foe in place for a round.",
+      "tags": [
+        "magic",
+        "immobilize",
+        "true-doom-only"
+      ]
+    },
+    {
+      "id": "jet-boots",
+      "name": "Jet Boots",
+      "kind": "mobility",
+      "power": 0,
+      "cost": "armor-power:1",
+      "description": "Rises above the melee to a balcony or ledge.",
+      "tags": [
+        "flight",
+        "reposition"
+      ]
+    },
+    {
+      "id": "electrified-grapple",
+      "name": "Electrified Grapple",
+      "kind": "heavy",
+      "power": 7,
+      "cost": "armor-power:2",
+      "description": "Seizes a foe and discharges the armor's shell into them.",
+      "tags": [
+        "shock",
+        "close"
+      ]
+    },
+    {
+      "id": "backhand",
+      "name": "Backhand",
+      "kind": "light",
+      "power": 4,
+      "description": "A contemptuous armored slap that sends a man across the room.",
+      "tags": [
+        "knockback"
+      ]
+    },
+    {
+      "id": "doombot-decoy",
+      "name": "Doombot Decoy",
+      "kind": "utility",
+      "power": 0,
+      "cost": "doombots:1",
+      "description": "A Doombot takes his position; the Doom on the field may no longer be the true one.",
+      "tags": [
+        "decoy",
+        "ambiguity"
+      ]
+    },
+    {
+      "id": "castle-defenses",
+      "name": "Castle Defenses",
+      "kind": "control",
+      "power": 5,
+      "description": "Turrets, traps and gas in Castle Doom; home arena only.",
+      "tags": [
+        "environment",
+        "home-only"
+      ]
+    },
+    {
+      "id": "time-platform",
+      "name": "Time Platform Displacement",
+      "kind": "ultimate",
+      "power": 9,
+      "cost": "armor-power:4",
+      "description": "Shunts a foe out of the fight for two rounds; once per arc.",
+      "tags": [
+        "once-per-arc",
+        "banish"
+      ]
+    },
+    {
+      "id": "offer-of-surrender",
+      "name": "Offer of Surrender",
+      "kind": "utility",
+      "power": 0,
+      "description": "Spends the round demanding the foe kneel; a refusal steels his resolve, an acceptance ends his attacks.",
+      "tags": [
+        "honor-code",
+        "monologue"
+      ]
+    }
   ],
-  "palette": { "primary": "#00a800", "secondary": "#bcbcbc", "accent": "#7c7c7c" },
+  "palette": {
+    "primary": "#8a8a9c",
+    "secondary": "#2a7a3a",
+    "accent": "#d8d8e8"
+  },
   "homeLocation": "latveria-castle",
-  "factions": { "public-opinion": -30, "nypd": -20, "daily-bugle": -40, "shield": -80, "latveria": 100, "hydra": -60, "asgard": -50, "wakanda": -70, "kingpin-org": -10 },
-  "leitmotif": "Slow pipe-organ march in a low minor key over a mechanical pulse; a single piano line when he is alone."
+  "factions": {
+    "public-opinion": -30,
+    "nypd": -20,
+    "daily-bugle": -40,
+    "shield": -80,
+    "latveria": 100,
+    "hydra": -60,
+    "asgard": -50,
+    "wakanda": -70,
+    "kingpin-org": -10
+  },
+  "leitmotif": "Slow pipe-organ march in a low minor key over a mechanical pulse; a single piano line when he is alone.",
+  "look": {
+    "build": "bulky",
+    "head": "helmet",
+    "cape": true,
+    "emblem": false,
+    "twoTone": false,
+    "visor": "#a8a8b8"
+  }
 }

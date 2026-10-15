@@ -1,0 +1,5 @@
+{
+  "_comment": "Hand-drawn art overrides. See docs/ART.md. Remove an entry to fall back to the procedural art for that key.",
+  "characters": {},
+  "textures": {}
+}

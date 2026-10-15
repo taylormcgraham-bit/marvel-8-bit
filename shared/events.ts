@@ -136,6 +136,8 @@ export const EvSpawn = EventBase.extend({
   maxHp: z.number().int(),
   palette: z.object({ primary: z.string(), secondary: z.string(), accent: z.string() }),
   role: z.enum(["hero", "villain", "antihero", "supporting"]),
+  /** procedural-rig hints; absent when a hand-drawn sheet exists for this character */
+  look: z.record(z.string(), z.unknown()).optional(),
 });
 export const EvDespawn = EventBase.extend({ type: z.literal("despawn"), who: z.string() });
 export const EvNote = EventBase.extend({

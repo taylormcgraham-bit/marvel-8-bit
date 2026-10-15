@@ -4,28 +4,182 @@
   "civilianName": "Matt Murdock",
   "role": "hero",
   "tier": "street",
-  "grid": { "int": 3, "str": 3, "spd": 2, "dur": 2, "nrg": 1, "fgt": 6 },
+  "grid": {
+    "int": 3,
+    "str": 3,
+    "spd": 2,
+    "dur": 2,
+    "nrg": 1,
+    "fgt": 6
+  },
   "traits": [
-    "radar-sense", "enhanced-senses", "blind", "lie-detector", "martial-artist", "acrobat",
-    "peak-human", "no-kill-code", "protects-civilians-first", "secret-identity", "works-alone",
-    "sensory-overload-vulnerable", "no-superhuman-durability", "resource-billy-club-cable",
+    "radar-sense",
+    "enhanced-senses",
+    "blind",
+    "lie-detector",
+    "martial-artist",
+    "acrobat",
+    "peak-human",
+    "no-kill-code",
+    "protects-civilians-first",
+    "secret-identity",
+    "works-alone",
+    "sensory-overload-vulnerable",
+    "no-superhuman-durability",
+    "resource-billy-club-cable",
     "defends-hells-kitchen"
   ],
   "moves": [
-    { "id": "billy-club-strike", "name": "Billy Club Strike", "kind": "light", "power": 3, "description": "Fast baton strike to a joint or temple.", "tags": ["melee"] },
-    { "id": "combination", "name": "Combination", "kind": "light", "power": 4, "cost": "stamina:1", "description": "Boxer's flurry of jabs, hooks, and an elbow, too fast to follow.", "tags": ["multi-hit"] },
-    { "id": "billy-club-throw", "name": "Billy Club Throw", "kind": "ranged", "power": 3, "description": "Thrown baton that ricochets off a wall to strike from a blind angle.", "tags": ["ricochet", "disorient"] },
-    { "id": "grapnel-pull", "name": "Grapnel Pull", "kind": "control", "power": 2, "cost": "billy-club-cable:0", "description": "Cable wraps a wrist or ankle to disarm or trip; unavailable if the cable is cut.", "tags": ["disarm", "trip", "requires-cable"] },
-    { "id": "cable-swing", "name": "Cable Swing", "kind": "mobility", "power": 2, "cost": "billy-club-cable:0", "description": "Swings in on the cable to close distance or out to escape; unavailable if the cable is cut.", "tags": ["gap-closer", "escape", "requires-cable"] },
-    { "id": "rooftop-drop", "name": "Rooftop Drop", "kind": "heavy", "power": 6, "cost": "stamina:1", "description": "Descending two-footed strike from height that ends most street fights.", "tags": ["gap-closer", "knockdown", "from-above"] },
-    { "id": "takedown", "name": "Takedown", "kind": "heavy", "power": 5, "description": "Joint lock or hip throw that puts a foe on the pavement.", "tags": ["knockdown", "grapple"] },
-    { "id": "radar-parry", "name": "Radar Parry", "kind": "defense", "power": 0, "description": "Reads the attack by sound and air and counters it; fails under sensory overload.", "tags": ["evade", "counter", "fails-when-overloaded"] },
-    { "id": "heartbeat-read", "name": "Heartbeat Read", "kind": "utility", "power": 0, "description": "Locates hidden foes and flags lies or feints by heartbeat; fails against trained liars and machines.", "tags": ["detect", "reveal", "lie-detect"] },
-    { "id": "pressure-point", "name": "Pressure Point", "kind": "control", "power": 3, "description": "Precise strike that numbs a limb for a round.", "tags": ["disable-limb", "immobilize"] },
-    { "id": "shield-civilian", "name": "Shield Civilian", "kind": "rescue", "power": 0, "description": "Spends the round pulling a bystander behind cover.", "tags": ["civilian"] }
+    {
+      "id": "billy-club-strike",
+      "name": "Billy Club Strike",
+      "kind": "light",
+      "power": 3,
+      "description": "Fast baton strike to a joint or temple.",
+      "tags": [
+        "melee"
+      ]
+    },
+    {
+      "id": "combination",
+      "name": "Combination",
+      "kind": "light",
+      "power": 4,
+      "cost": "stamina:1",
+      "description": "Boxer's flurry of jabs, hooks, and an elbow, too fast to follow.",
+      "tags": [
+        "multi-hit"
+      ]
+    },
+    {
+      "id": "billy-club-throw",
+      "name": "Billy Club Throw",
+      "kind": "ranged",
+      "power": 3,
+      "description": "Thrown baton that ricochets off a wall to strike from a blind angle.",
+      "tags": [
+        "ricochet",
+        "disorient"
+      ]
+    },
+    {
+      "id": "grapnel-pull",
+      "name": "Grapnel Pull",
+      "kind": "control",
+      "power": 2,
+      "cost": "billy-club-cable:0",
+      "description": "Cable wraps a wrist or ankle to disarm or trip; unavailable if the cable is cut.",
+      "tags": [
+        "disarm",
+        "trip",
+        "requires-cable"
+      ]
+    },
+    {
+      "id": "cable-swing",
+      "name": "Cable Swing",
+      "kind": "mobility",
+      "power": 2,
+      "cost": "billy-club-cable:0",
+      "description": "Swings in on the cable to close distance or out to escape; unavailable if the cable is cut.",
+      "tags": [
+        "gap-closer",
+        "escape",
+        "requires-cable"
+      ]
+    },
+    {
+      "id": "rooftop-drop",
+      "name": "Rooftop Drop",
+      "kind": "heavy",
+      "power": 6,
+      "cost": "stamina:1",
+      "description": "Descending two-footed strike from height that ends most street fights.",
+      "tags": [
+        "gap-closer",
+        "knockdown",
+        "from-above"
+      ]
+    },
+    {
+      "id": "takedown",
+      "name": "Takedown",
+      "kind": "heavy",
+      "power": 5,
+      "description": "Joint lock or hip throw that puts a foe on the pavement.",
+      "tags": [
+        "knockdown",
+        "grapple"
+      ]
+    },
+    {
+      "id": "radar-parry",
+      "name": "Radar Parry",
+      "kind": "defense",
+      "power": 0,
+      "description": "Reads the attack by sound and air and counters it; fails under sensory overload.",
+      "tags": [
+        "evade",
+        "counter",
+        "fails-when-overloaded"
+      ]
+    },
+    {
+      "id": "heartbeat-read",
+      "name": "Heartbeat Read",
+      "kind": "utility",
+      "power": 0,
+      "description": "Locates hidden foes and flags lies or feints by heartbeat; fails against trained liars and machines.",
+      "tags": [
+        "detect",
+        "reveal",
+        "lie-detect"
+      ]
+    },
+    {
+      "id": "pressure-point",
+      "name": "Pressure Point",
+      "kind": "control",
+      "power": 3,
+      "description": "Precise strike that numbs a limb for a round.",
+      "tags": [
+        "disable-limb",
+        "immobilize"
+      ]
+    },
+    {
+      "id": "shield-civilian",
+      "name": "Shield Civilian",
+      "kind": "rescue",
+      "power": 0,
+      "description": "Spends the round pulling a bystander behind cover.",
+      "tags": [
+        "civilian"
+      ]
+    }
   ],
-  "palette": { "primary": "#a81000", "secondary": "#5c0000", "accent": "#f8b878" },
+  "palette": {
+    "primary": "#a81000",
+    "secondary": "#5c0000",
+    "accent": "#f8b878"
+  },
   "homeLocation": "hells-kitchen",
-  "factions": { "public-opinion": 30, "nypd": 0, "daily-bugle": 10, "shield": 0, "kingpin-org": -90 },
-  "leitmotif": "Sparse, low, church-organ-style pad with a lone staccato pulse like a heartbeat; swells into a driving minor riff in combat."
+  "factions": {
+    "public-opinion": 30,
+    "nypd": 0,
+    "daily-bugle": 10,
+    "shield": 0,
+    "kingpin-org": -90
+  },
+  "leitmotif": "Sparse, low, church-organ-style pad with a lone staccato pulse like a heartbeat; swells into a driving minor riff in combat.",
+  "look": {
+    "build": "lean",
+    "head": "cowl",
+    "cape": false,
+    "emblem": true,
+    "twoTone": false,
+    "props": [
+      "club"
+    ]
+  }
 }

@@ -29,6 +29,17 @@ export const StatsSchema = z.object({
   resources: z.record(z.string(), z.number().int()).optional(),
   leitmotif: z.string().optional(),
   universe: z.string().default("616"),
+  look: z.object({
+    build: z.enum(["lean", "normal", "bulky", "huge"]).optional(),
+    head: z.enum(["full-mask", "cowl", "helmet", "face", "hood", "skull", "horned-helm"]).optional(),
+    cape: z.boolean().optional(),
+    emblem: z.boolean().optional(),
+    twoTone: z.boolean().optional(),
+    skin: z.string().optional(),
+    hair: z.string().optional(),
+    visor: z.string().optional(),
+    props: z.array(z.enum(["shield", "hammer", "tentacles", "cane", "club", "satchel"])).optional(),
+  }).optional(),
 });
 export type Stats = z.infer<typeof StatsSchema>;
 

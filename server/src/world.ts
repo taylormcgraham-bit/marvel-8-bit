@@ -137,7 +137,7 @@ export class World {
       }, { d: Infinity, id: "center" });
       out.push({
         type: "spawn", seq: 0, t, ms: 400, who: a.id, name: a.name, at: near.id, x: a.x, y: a.y, facing: a.facing,
-        hp: a.hp, maxHp: a.maxHp, palette: a.character.stats.palette, role: a.character.stats.role,
+        hp: a.hp, maxHp: a.maxHp, palette: a.character.stats.palette, role: a.character.stats.role, look: a.character.stats.look,
       });
     }
     return out;
