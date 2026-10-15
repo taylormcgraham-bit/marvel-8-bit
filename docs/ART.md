@@ -1,8 +1,11 @@
 # Art direction and asset pipeline
 
-Target look: **16-bit, not 8-bit.** SNES Zelda for the overworld and tiles, TMNT arcade and
-Street Fighter for character size and punch, Shovel Knight for modern polish. Outlined,
-shaded sprites; layered backgrounds; lighting; chunky combat feedback.
+Target look: **blocky Minecraft-style pixel art, top-down, with more detail than 8-bit.**
+Cube heads and boxy bodies in Steve proportions, no hard cartoon outline (a soft darkened
+edge instead), block texture on every surface (bricks with cream mortar, gravel, cobblestone,
+oak planks, iron, glass), and a slight 2.5D feel where walls and objects show a front face.
+Layered sky, lighting pools, chunky combat feedback. SNES Zelda is still the reference for
+how the overworld is laid out and read.
 
 ## What ships today (procedural)
 
@@ -14,8 +17,9 @@ Every texture is generated at boot in `client/src/render/`:
   palette and `look` in their `stats.json` (build, head type, cape, props).
 - `pixels.ts`: tiles, sky layers, objects (water tower, stairwell bulkhead), emotes, FX.
 
-This is a real step up from flat shapes and it is still a rig. It will never reach Link's
-Awakening. That ceiling is why the pipeline below exists.
+The rig gets the proportions, texture and lighting right and is still a rig. Hand-drawn
+sheets are how individual characters get their iconic details (Spidey's web pattern, Doom's
+riveted mask, Thor's winged helm). That is why the pipeline below exists.
 
 ## Dropping in hand-drawn art
 

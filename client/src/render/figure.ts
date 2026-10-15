@@ -1,9 +1,9 @@
 /**
- * Character rig. One function draws any character in any pose from a palette and a `look`
- * (build, head type, props). Output is a 24x34 pixel buffer, outlined and shaded.
- * Real sprite sheets (docs/ART.md) replace this one texture key at a time.
+ * Character rig, Minecraft-style: cube head, boxy torso, straight limbs, no hard outline,
+ * block texture on every face. One function draws any character in any pose from a palette
+ * and a `look`. Output is a 24x34 buffer. Hand-drawn sheets (docs/ART.md) replace it 1:1.
  */
-import { Buf, outline, shade, tone, mix } from "./buf";
+import { Buf, outline, shade, grain, tone } from "./buf";
 
 export const FRAME_W = 24;
 export const FRAME_H = 34;
@@ -20,14 +20,10 @@ export interface Look {
   skin: string;
   hair: string;
   props: Prop[];
-  /** helmet faceplate color; defaults to the secondary color */
   visor?: string;
-  /** secondary color covers legs (true) or only the belt/trunks (false) */
   twoTone: boolean;
 }
-
 export interface Palette { primary: string; secondary: string; accent: string }
-
 export type Pose = "idle" | "walk" | "attack" | "hurt" | "ko";
 export type Facing = "down" | "up" | "side";
 
@@ -35,223 +31,226 @@ export const DEFAULT_LOOK: Look = {
   build: "normal", head: "full-mask", cape: false, emblem: true, skin: "#f0c0a0", hair: "#3a2a20", props: [], twoTone: true,
 };
 
-const BUILDS: Record<Build, { torsoW: number; torsoH: number; armW: number; legW: number; headW: number; headH: number; shoulder: number }> = {
-  lean:   { torsoW: 8,  torsoH: 9,  armW: 2, legW: 3, headW: 7, headH: 7, shoulder: 0 },
-  normal: { torsoW: 10, torsoH: 9,  armW: 3, legW: 4, headW: 8, headH: 8, shoulder: 0 },
-  bulky:  { torsoW: 13, torsoH: 10, armW: 4, legW: 5, headW: 8, headH: 8, shoulder: 1 },
-  huge:   { torsoW: 16, torsoH: 11, armW: 5, legW: 6, headW: 9, headH: 8, shoulder: 2 },
+const INK = "#1a1a24";
+const WHITE = "#f8f8f8";
+
+/** Minecraft proportions scaled to the frame: head is a cube, torso a box, limbs straight sticks. */
+const BUILDS: Record<Build, { head: number; torsoW: number; torsoH: number; armW: number; legW: number; legH: number }> = {
+  lean:   { head: 8, torsoW: 7,  torsoH: 11, armW: 3, legW: 3, legH: 12 },
+  normal: { head: 8, torsoW: 8,  torsoH: 11, armW: 4, legW: 4, legH: 12 },
+  bulky:  { head: 8, torsoW: 10, torsoH: 12, armW: 5, legW: 5, legH: 11 },
+  huge:   { head: 9, torsoW: 12, torsoH: 12, armW: 6, legW: 5, legH: 11 },
 };
 
-/** Draw a head into buf with its top-left at (x, y). Returns nothing; eye placement depends on facing. */
-function drawHead(b: Buf, x: number, y: number, w: number, h: number, look: Look, pal: Palette, facing: Facing, k = 1) {
-  const R = (rx: number, ry: number, rw: number, rh: number, c: string) => b.rect(x + rx * k, y + ry * k, rw * k, rh * k, c);
-  const eyeY = Math.floor(h * 0.42);
-  const lensW = Math.max(2, Math.floor(w / 4));
-  const eyes = (c: string, outlineEyes = false) => {
+/** Face/head block, top-left at (x, y), size s. */
+function drawHead(b: Buf, x: number, y: number, s: number, look: Look, pal: Palette, facing: Facing) {
+  const R = (rx: number, ry: number, rw: number, rh: number, c: string) => b.rect(x + rx, y + ry, rw, rh, c);
+  const eyeRow = Math.floor(s / 2) - 1;
+  const eyes = (iris: string, white = WHITE) => {
     if (facing === "up") return;
-    if (facing === "side") { R(w - lensW - 1, eyeY, lensW, 2, c); if (outlineEyes) R(w - lensW - 2, eyeY, 1, 2, tone(c, -0.5)); }
-    else { R(1, eyeY, lensW, 2, c); R(w - lensW - 1, eyeY, lensW, 2, c); }
+    if (facing === "side") { R(s - 3, eyeRow, 1, 1, white); R(s - 2, eyeRow, 1, 1, iris); return; }
+    R(1, eyeRow, 1, 1, white); R(2, eyeRow, 1, 1, iris);
+    R(s - 3, eyeRow, 1, 1, iris); R(s - 2, eyeRow, 1, 1, white);
+  };
+  const lenses = (c: string) => {
+    if (facing === "up") return;
+    const w = Math.max(2, Math.floor(s / 3));
+    if (facing === "side") { R(s - w - 1, eyeRow - 1, w, 2, c); R(s - w - 2, eyeRow - 1, 1, 2, INK); return; }
+    R(1, eyeRow - 1, w, 2, c); R(s - w - 1, eyeRow - 1, w, 2, c);
+    R(0, eyeRow - 1, 1, 2, tone(pal.primary, -0.4)); R(s - 1, eyeRow - 1, 1, 2, tone(pal.primary, -0.4));
   };
   switch (look.head) {
-    case "full-mask":
-      R(0, 0, w, h, pal.primary);
-      eyes(pal.accent, true);
-      // webbing hint: a darker centerline
-      if (facing !== "side") R(Math.floor(w / 2), 0, 1, h, tone(pal.primary, -0.12));
+    case "full-mask": {
+      R(0, 0, s, s, pal.primary);
+      const web = tone(pal.primary, -0.22);
+      if (facing !== "up") { R(Math.floor(s / 2), 0, 1, s, web); R(0, 1, s, 1, web); R(0, s - 2, s, 1, web); R(1, Math.floor(s / 2) + 1, s - 2, 1, web); }
+      else { R(Math.floor(s / 2), 0, 1, s, web); R(0, Math.floor(s / 2), s, 1, web); }
+      lenses(pal.accent);
       break;
+    }
     case "cowl":
-      R(0, 0, w, h, pal.primary);
-      R(0, Math.floor(h * 0.6), w, Math.ceil(h * 0.4), look.skin); // jaw exposed
-      eyes("#fcfcfc");
-      if (facing !== "up" && facing !== "side") { R(0, Math.floor(h * 0.6), 1, 2, pal.primary); R(w - 1, Math.floor(h * 0.6), 1, 2, pal.primary); }
+      R(0, 0, s, s, pal.primary);
+      if (facing !== "up") { R(1, s - 3, s - 2, 3, look.skin); R(2, s - 1, s - 4, 1, tone(look.skin, -0.3)); }
+      eyes(INK);
+      if (look.emblem && facing === "down") R(Math.floor(s / 2) - 1, 0, 2, 1, pal.accent); // the little A / horns tip
       break;
-    case "helmet":
-      R(0, 0, w, h, pal.primary);
-      R(1, Math.floor(h * 0.3), w - 2, Math.ceil(h * 0.55), look.visor ?? pal.secondary); // faceplate
-      eyes(pal.accent);
+    case "helmet": {
+      R(0, 0, s, s, pal.primary);
+      const v = look.visor ?? pal.secondary;
+      if (facing !== "up") { R(1, 2, s - 2, s - 3, v); R(1, 2, s - 2, 1, tone(v, 0.25)); }
+      if (facing === "side") R(s - 3, eyeRow, 2, 1, pal.accent);
+      else if (facing === "down") { R(2, eyeRow, 1, 1, pal.accent); R(s - 3, eyeRow, 1, 1, pal.accent); R(2, s - 2, s - 4, 1, tone(v, -0.3)); }
       break;
+    }
     case "face":
-      R(0, 0, w, h, look.skin);
-      R(0, 0, w, Math.max(2, Math.floor(h * 0.3)), look.hair); // hair
-      if (facing === "side") R(0, 0, Math.floor(w * 0.35), Math.floor(h * 0.6), look.hair);
-      if (facing === "up") R(0, 0, w, Math.floor(h * 0.7), look.hair);
-      eyes("#20202c");
+      R(0, 0, s, s, look.skin);
+      R(0, 0, s, 2, look.hair);
+      if (facing === "side") { R(0, 0, 3, 5, look.hair); R(0, 2, 2, s - 2, look.hair); }
+      else if (facing === "up") R(0, 0, s, s - 1, look.hair);
+      else { R(0, 0, 1, 4, look.hair); R(s - 1, 0, 1, 4, look.hair); }
+      eyes(INK);
+      if (facing === "down") R(3, s - 2, s - 6, 1, tone(look.skin, -0.35));
       break;
     case "hood":
-      R(0, 0, w, h, pal.secondary);
-      R(1, Math.floor(h * 0.35), w - 2, Math.ceil(h * 0.65), look.skin); // face inside the hood
-      R(0, -2, w, 2, pal.primary); // the hat
-      eyes("#20202c");
+      R(0, 0, s, s, pal.secondary);
+      if (facing !== "up") R(1, 2, s - 2, s - 2, look.skin);
+      R(0, 0, s, 2, pal.primary); R(-1, 0, s + 2, 1, pal.primary); // hat brim
+      eyes(INK, tone(look.skin, 0.5));
+      if (facing === "down") R(2, s - 2, s - 4, 1, tone(look.skin, -0.4)); // grin
       break;
     case "skull":
-      R(0, 0, w, h, pal.primary);
-      eyes("#101010");
-      if (facing !== "up") R(1, h - 2, w - 2, 1, "#101010"); // teeth line
+      R(0, 0, s, s, pal.primary);
+      if (facing !== "up") {
+        if (facing === "side") R(s - 3, eyeRow - 1, 2, 2, INK);
+        else { R(1, eyeRow - 1, 2, 2, INK); R(s - 3, eyeRow - 1, 2, 2, INK); R(Math.floor(s / 2), eyeRow + 1, 1, 1, INK); }
+        R(1, s - 2, s - 2, 1, INK); for (let i = 1; i < s - 1; i += 2) R(i, s - 2, 1, 1, tone(pal.primary, 0.5));
+      }
       break;
     case "horned-helm":
-      R(0, 0, w, h, pal.accent);
-      R(0, Math.floor(h * 0.55), w, Math.ceil(h * 0.45), look.skin);
-      eyes("#20202c");
+      R(0, 0, s, s, look.skin);
+      R(0, 0, s, 4, pal.accent); R(0, 4, 1, 2, pal.accent); R(s - 1, 4, 1, 2, pal.accent);
+      eyes(INK);
       // horns
-      R(-2, -4, 2, 5, pal.accent); R(-3, -6, 2, 3, pal.accent);
-      R(w, -4, 2, 5, pal.accent); R(w + 1, -6, 2, 3, pal.accent);
+      R(-2, -3, 2, 4, pal.accent); R(-3, -5, 2, 3, pal.accent); R(-3, -6, 1, 1, pal.accent);
+      R(s, -3, 2, 4, pal.accent); R(s + 1, -5, 2, 3, pal.accent); R(s + 2, -6, 1, 1, pal.accent);
       break;
   }
 }
 
-/**
- * Build one frame. Coordinates: frame is FRAME_W x FRAME_H; feet rest at y = FRAME_H - 3.
- * `step` is 0..2 for walk, 0..1 for idle.
- */
+/** Build one frame. Feet rest at y = FRAME_H - 2. */
 export function drawFigure(look: Look, pal: Palette, facing: Facing, pose: Pose, step = 0): Buf {
   const b = new Buf(FRAME_W, FRAME_H);
   const B = BUILDS[look.build];
   const cx = FRAME_W / 2;
-  const feet = FRAME_H - 3;
-  const legH = 8, bootH = 2;
-  const torsoTop = feet - legH - B.torsoH;
-  const headTop = torsoTop - B.headH - 1;
+  const feet = FRAME_H - 2;
+  const legTop = feet - B.legH;
+  const torsoTop = legTop - B.torsoH;
+  const headTop = torsoTop - B.head;
 
-  const legColor = look.twoTone ? pal.secondary : pal.primary;
-  const boot = tone(pal.secondary, -0.45);
-  const skin = look.skin;
+  const legC = look.twoTone ? pal.secondary : pal.primary;
+  const bootC = tone(look.twoTone ? pal.secondary : pal.primary, -0.5);
+  const sleeveC = pal.primary;
+  const handC = look.head === "face" || look.head === "cowl" || look.head === "hood" ? look.skin : pal.primary;
 
-  // bob: contact frames low, passing frame high
-  let bob = 0;
-  if (pose === "walk") bob = step === 1 ? -1 : 0;
-  if (pose === "idle") bob = step === 1 ? 1 : 0;
+  const bob = pose === "walk" ? (step === 1 ? -1 : 0) : pose === "idle" && step === 1 ? 1 : 0;
+  const lean = pose === "attack" && facing === "side" ? 1 : pose === "hurt" ? -1 : 0;
+  // Minecraft swings arms and legs in opposition
+  const swing = pose === "walk" ? (step === 0 ? 1 : step === 2 ? -1 : 0) : 0;
 
-  // leg offsets
-  let lLegDy = 0, rLegDy = 0, lLegDx = 0, rLegDx = 0;
-  if (pose === "walk") {
-    if (facing === "side") { lLegDx = step === 0 ? 2 : step === 2 ? -2 : 0; rLegDx = -lLegDx; }
-    else { lLegDy = step === 0 ? -2 : 0; rLegDy = step === 2 ? -2 : 0; }
+  // ---- cape behind
+  if (look.cape) {
+    const capeC = tone(pal.secondary, -0.25);
+    const cw = B.torsoW + 4, ch = B.torsoH + Math.floor(B.legH * 0.6);
+    if (facing === "up") b.rect(cx - cw / 2, torsoTop + bob, cw, ch, pal.secondary);
+    else b.rect(cx - cw / 2 + (facing === "side" ? -3 : 0), torsoTop + bob + 1, cw, ch - 1, capeC);
   }
-
-  // ---- cape (behind everything)
-  if (look.cape && facing !== "up") {
-    const capeC = tone(pal.secondary, -0.2);
-    b.rect(cx - B.torsoW / 2 - 1, torsoTop + bob, B.torsoW + 2, B.torsoH + legH - 2, capeC);
-  }
-
-  // ---- props drawn behind the body
+  // ---- props behind
   if (look.props.includes("tentacles")) {
-    const t = "#8a8a9a";
-    for (const side of [-1, 1]) {
-      const sx = cx + side * (B.torsoW / 2 + 2);
-      b.rect(sx, torsoTop - 6 + bob, 2, 10, t); b.rect(sx + side * 2, torsoTop - 9 + bob, 2, 4, t); b.rect(sx + side * 4, torsoTop - 11 + bob, 3, 3, t);
-      b.rect(sx + side * 5, torsoTop - 11 + bob, 1, 1, "#d0d0e0");
+    const t = "#8e8e9e", hi = "#c8c8d8";
+    for (const sgn of [-1, 1]) {
+      const sx = cx + sgn * (B.torsoW / 2 + 2);
+      b.rect(sx - 1, torsoTop - 5 + bob, 2, 12, t); b.rect(sx - 1 + sgn * 2, torsoTop - 9 + bob, 2, 5, t); b.rect(sx - 1 + sgn * 4, torsoTop - 12 + bob, 3, 4, t);
+      b.rect(sx - 1 + sgn * 4, torsoTop - 12 + bob, 1, 1, hi); b.rect(sx - 1 + sgn * 5, torsoTop - 11 + bob, 1, 1, "#e04040");
     }
   }
   if (look.props.includes("shield") && facing === "up") {
-    // shield on the back
-    b.disc(cx, torsoTop + 4 + bob, 5, pal.secondary); b.disc(cx, torsoTop + 4 + bob, 3, "#fcfcfc"); b.disc(cx, torsoTop + 4 + bob, 1, pal.primary);
-  }
-  if (look.cape && facing === "up") {
-    b.rect(cx - B.torsoW / 2 - 1, torsoTop + bob, B.torsoW + 2, B.torsoH + legH - 2, tone(pal.secondary, -0.2));
+    const sy = torsoTop + 5 + bob;
+    b.rect(cx - 4, sy - 3, 8, 7, pal.secondary); b.rect(cx - 3, sy - 4, 6, 9, pal.secondary);
+    b.rect(cx - 2, sy - 2, 4, 5, WHITE); b.rect(cx - 1, sy - 1, 2, 3, pal.primary);
   }
 
   // ---- legs
   if (facing === "side") {
-    const back = cx - 2 + rLegDx, front = cx - B.legW + 2 + lLegDx;
-    b.rect(back, feet - legH, B.legW, legH, tone(legColor, -0.15));
-    b.rect(back, feet - bootH, B.legW, bootH, tone(boot, -0.1));
-    b.rect(front, feet - legH, B.legW, legH, legColor);
-    b.rect(front, feet - bootH, B.legW, bootH, boot);
+    const stride = pose === "walk" ? (step === 0 ? 2 : step === 2 ? -2 : 0) : 0;
+    b.rect(cx - 1 - stride, legTop, B.legW, B.legH, tone(legC, -0.2));
+    b.rect(cx - 1 - stride, feet - 2, B.legW, 2, tone(bootC, -0.1));
+    b.rect(cx - B.legW + 1 + stride, legTop, B.legW, B.legH, legC);
+    b.rect(cx - B.legW + 1 + stride, feet - 2, B.legW, 2, bootC);
   } else {
-    const lx = cx - B.legW - 0.5, rx = cx + 0.5;
-    b.rect(lx, feet - legH + lLegDy, B.legW, legH, legColor);
-    b.rect(rx, feet - legH + rLegDy, B.legW, legH, legColor);
-    b.rect(lx, feet - bootH + lLegDy, B.legW, bootH, boot);
-    b.rect(rx, feet - bootH + rLegDy, B.legW, bootH, boot);
-    // a lifted foot clears the ground
-    if (lLegDy) for (let i = 0; i < B.legW; i++) for (let j = 0; j < -lLegDy; j++) b.set(Math.round(lx) + i, feet - 1 - j, null);
-    if (rLegDy) for (let i = 0; i < B.legW; i++) for (let j = 0; j < -rLegDy; j++) b.set(Math.round(rx) + i, feet - 1 - j, null);
+    const lx = cx - B.legW, rx = cx;
+    const lLift = pose === "walk" ? (step === 0 ? 2 : 0) : 0, rLift = pose === "walk" ? (step === 2 ? 2 : 0) : 0;
+    b.rect(lx, legTop, B.legW, B.legH - lLift, legC); b.rect(lx, feet - 2 - lLift, B.legW, 2, bootC);
+    b.rect(rx, legTop, B.legW, B.legH - rLift, legC); b.rect(rx, feet - 2 - rLift, B.legW, 2, bootC);
+    b.rect(cx, legTop, 1, B.legH, tone(legC, -0.25)); // gap between legs reads as a seam
   }
 
   // ---- torso
-  const tx = cx - B.torsoW / 2, ty = torsoTop + bob;
-  const lean = pose === "attack" && facing === "side" ? 1 : pose === "hurt" ? -1 : 0;
-  b.rect(tx + lean, ty, B.torsoW, B.torsoH, pal.primary);
-  // belt / trunks
-  b.rect(tx + lean, ty + B.torsoH - 2, B.torsoW, 2, look.twoTone ? pal.secondary : tone(pal.primary, -0.35));
-  if (!look.twoTone) b.rect(tx + lean, ty + B.torsoH - 1, B.torsoW, 1, pal.accent);
-  // emblem / chest detail
-  if (look.emblem && facing === "down") b.rect(cx - 1 + lean, ty + 2, 2, 3, pal.accent);
-  if (look.head === "helmet" && facing === "down") b.disc(cx + lean, ty + 3, 1, pal.accent); // arc reactor
-  // muscle line for bulky builds
-  if ((look.build === "bulky" || look.build === "huge") && facing !== "up") b.rect(cx + lean, ty + 1, 1, B.torsoH - 3, tone(pal.primary, -0.12));
+  const tx = cx - B.torsoW / 2 + lean, ty = torsoTop + bob;
+  const tw = facing === "side" ? Math.max(4, Math.round(B.torsoW * 0.7)) : B.torsoW;
+  const txx = facing === "side" ? cx - tw / 2 + lean : tx;
+  b.rect(txx, ty, tw, B.torsoH, pal.primary);
+  b.rect(txx, ty + B.torsoH - 2, tw, 2, look.twoTone ? tone(pal.secondary, -0.1) : tone(pal.primary, -0.4)); // belt
+  if (!look.twoTone) b.rect(txx + 1, ty + B.torsoH - 2, tw - 2, 1, pal.accent); // buckle line
+  if (look.emblem && facing === "down") { b.rect(cx - 1 + lean, ty + 2, 2, 3, pal.accent); b.rect(cx - 2 + lean, ty + 3, 4, 1, pal.accent); }
+  if (look.head === "helmet" && facing === "down") b.rect(cx - 1 + lean, ty + 2, 2, 2, pal.accent); // reactor / chest light
+  if (look.props.includes("satchel") && facing !== "up") { b.rect(txx + tw - 3, ty + 3, 3, 4, "#6a4a2a"); b.rect(txx + tw - 3, ty + 3, 3, 1, "#8a6a3a"); }
+  if ((look.build === "huge" || look.build === "bulky") && facing === "down") b.rect(cx + lean, ty + 1, 1, B.torsoH - 3, tone(pal.primary, -0.14));
 
   // ---- arms
-  const armH = Math.min(B.torsoH, 8);
-  const swing = pose === "walk" ? (step === 0 ? 1 : step === 2 ? -1 : 0) : 0;
+  const armH = Math.min(B.torsoH + 1, 12);
   if (facing === "side") {
-    // back arm
-    b.rect(cx - 1 - swing, ty + 1, B.armW, armH, tone(pal.primary, -0.18));
-    b.rect(cx - 1 - swing, ty + armH, B.armW, 2, tone(skin, -0.2));
-    // front arm
+    // back arm (behind body) then front arm
+    const ax = cx - B.armW / 2 + lean;
+    b.rect(ax - swing * 2, ty, B.armW, armH, tone(sleeveC, -0.22));
+    b.rect(ax - swing * 2, ty + armH - 2, B.armW, 2, tone(handC, -0.25));
     if (pose === "attack") {
-      b.rect(cx + 1, ty + 2, B.armW + 6, Math.max(2, B.armW - 1), pal.primary);
-      b.rect(cx + 1 + B.armW + 6, ty + 2, 2, Math.max(2, B.armW - 1), skin); // fist
+      b.rect(cx + 1, ty + 2, B.armW + 7, Math.max(2, B.armW - 1), sleeveC);
+      b.rect(cx + 1 + B.armW + 6, ty + 2, 2, Math.max(2, B.armW - 1), handC);
     } else {
-      b.rect(cx + swing, ty + 1, B.armW, armH, pal.primary);
-      b.rect(cx + swing, ty + armH, B.armW, 2, skin);
+      b.rect(ax + swing * 2, ty, B.armW, armH, sleeveC);
+      b.rect(ax + swing * 2, ty + armH - 2, B.armW, 2, handC);
     }
   } else {
     const spread = pose === "hurt" ? 2 : 0;
-    b.rect(tx - B.armW - spread, ty + 1 + (swing > 0 ? 1 : 0) + B.shoulder, B.armW, armH, pal.primary);
-    b.rect(tx - B.armW - spread, ty + armH + 1 + (swing > 0 ? 1 : 0), B.armW, 2, skin);
-    b.rect(tx + B.torsoW + spread, ty + 1 + (swing < 0 ? 1 : 0) + B.shoulder, B.armW, armH, pal.primary);
-    b.rect(tx + B.torsoW + spread, ty + armH + 1 + (swing < 0 ? 1 : 0), B.armW, 2, skin);
+    const lArmY = ty + (swing > 0 ? -1 : swing < 0 ? 1 : 0), rArmY = ty + (swing < 0 ? -1 : swing > 0 ? 1 : 0);
+    b.rect(tx - B.armW - spread, lArmY, B.armW, armH, sleeveC); b.rect(tx - B.armW - spread, lArmY + armH - 2, B.armW, 2, handC);
+    b.rect(tx + B.torsoW + spread, rArmY, B.armW, armH, sleeveC); b.rect(tx + B.torsoW + spread, rArmY + armH - 2, B.armW, 2, handC);
+    if (pose === "attack") { b.rect(tx + B.torsoW, ty - 4, B.armW, armH - 2, sleeveC); b.rect(tx + B.torsoW, ty - 4, B.armW, 2, handC); }
   }
 
   // ---- props in front
   if (look.props.includes("shield") && facing !== "up") {
-    const sx = facing === "side" ? cx + 3 : tx - B.armW - 3;
-    const sy = ty + 4;
-    b.disc(sx, sy, 5, pal.secondary); b.disc(sx, sy, 3, "#fcfcfc"); b.disc(sx, sy, 2, pal.secondary); b.disc(sx, sy, 1, "#fcfcfc");
+    const sx = facing === "side" ? cx + 3 : tx - B.armW - 2, sy = ty + 5;
+    b.rect(sx - 4, sy - 3, 8, 7, pal.secondary); b.rect(sx - 3, sy - 4, 6, 9, pal.secondary);
+    b.rect(sx - 3, sy - 2, 6, 5, WHITE); b.rect(sx - 2, sy - 1, 4, 3, pal.secondary); b.rect(sx - 1, sy, 2, 1, WHITE);
   }
   if (look.props.includes("hammer")) {
     const hx = facing === "side" ? cx + B.armW + 1 : tx + B.torsoW + B.armW;
-    b.rect(hx, ty - 4, 2, 12, "#7a5a3a"); b.rect(hx - 2, ty - 7, 6, 4, "#9a9aaa"); b.rect(hx - 2, ty - 7, 6, 1, "#d0d0e0");
+    b.rect(hx, ty - 3, 2, 13, "#7a5230"); b.rect(hx - 2, ty - 8, 6, 5, "#9c9cae"); b.rect(hx - 2, ty - 8, 6, 1, "#d8d8e8"); b.rect(hx - 2, ty - 4, 6, 1, "#6c6c7e");
   }
   if (look.props.includes("cane") && facing !== "up") {
-    const hx = facing === "side" ? cx + B.armW + 1 : tx + B.torsoW + B.armW + 1;
-    b.rect(hx, ty + 6, 1, feet - ty - 6, "#2a2a30"); b.rect(hx - 1, ty + 5, 3, 1, pal.accent);
+    const hx = facing === "side" ? cx + B.armW + 2 : tx + B.torsoW + B.armW + 1;
+    b.rect(hx, ty + 8, 1, feet - ty - 8, "#2a2a30"); b.rect(hx - 1, ty + 7, 3, 1, pal.accent);
   }
   if (look.props.includes("club") && facing !== "up") {
     const hx = facing === "side" ? cx + B.armW + 1 : tx + B.torsoW + B.armW + 1;
-    b.rect(hx, ty + 2, 1, 8, pal.primary);
+    b.rect(hx, ty + 3, 1, 9, pal.primary); b.rect(hx, ty + 3, 1, 1, pal.accent);
   }
 
-  // ---- head
-  const hx = cx - Math.floor(B.headW / 2) + (facing === "side" ? 1 : 0) + lean;
+  // ---- head (cube)
+  const hs = B.head;
+  const hx = cx - Math.floor(hs / 2) + (facing === "side" ? 1 : 0) + lean;
   const hy = headTop + bob + (pose === "hurt" ? 1 : 0);
-  // neck
-  b.rect(cx - 1 + lean, hy + B.headH, 2, 1, look.head === "face" || look.head === "cowl" ? skin : pal.primary);
-  drawHead(b, hx, hy, B.headW, B.headH, look, pal, facing);
+  drawHead(b, hx, hy, hs, look, pal, facing);
 
-  // ---- KO: draw lying down by rotating 90 degrees (rendered via sprite angle in the theater), just dim here
-  if (pose === "ko") {
-    for (let i = 0; i < b.px.length; i++) if (b.px[i]) b.px[i] = mix(b.px[i]!, "#9a9ab0", 0.5);
-  }
+  if (pose === "ko") for (let i = 0; i < b.px.length; i++) if (b.px[i]) b.px[i] = tone(b.px[i]!, -0.35);
 
-  outline(b);
-  shade(b);
+  grain(b, 0.06, look.build.length + hs);
+  outline(b, "soft");
+  shade(b, null, 0.16, 0.26, true);
   return b;
 }
 
-/** Portrait: head only, scaled up 3x into a 32x32 buffer with outline and shading. */
+/** Portrait: the head block scaled 3x into 32x32, with shoulders. */
 export function drawPortrait(look: Look, pal: Palette): Buf {
-  const B = BUILDS[look.build];
-  const small = new Buf(B.headW + 6, B.headH + 8);
-  // shoulders
-  small.rect(0, B.headH + 5, small.w, 3, pal.primary);
-  if (look.cape) small.rect(0, B.headH + 4, small.w, 4, tone(pal.secondary, -0.2));
-  small.rect(3, B.headH + 4, B.headW, 1, look.head === "face" || look.head === "cowl" ? look.skin : pal.primary);
-  drawHead(small, 3, 3, B.headW, B.headH, look, pal, "down");
-  outline(small);
-  shade(small);
+  const hs = BUILDS[look.build].head;
+  const small = new Buf(hs + 4, hs + 4);
+  small.rect(0, hs + 2, small.w, 2, pal.primary);
+  if (look.cape) small.rect(0, hs + 1, small.w, 3, tone(pal.secondary, -0.2));
+  drawHead(small, 2, 1, hs, look, pal, "down");
+  grain(small, 0.05, 3);
+  outline(small, "soft");
+  shade(small, null, 0.16, 0.26, true);
   const k = Math.floor(32 / Math.max(small.w, small.h));
   const big = small.scaled(k);
   const out = new Buf(32, 32);

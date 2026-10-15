@@ -72,6 +72,7 @@ export class Clock {
     try { return JSON.parse(fs.readFileSync(this.file, "utf8")); } catch { return null; }
   }
   save() {
+    fs.mkdirSync(CONFIG.dataDir, { recursive: true });
     fs.writeFileSync(this.file, JSON.stringify({ gameMs: this.gameMs, lastSeenAt: this.lastSeenAt, sceneLocked: this.sceneLocked } satisfies Persisted));
   }
 

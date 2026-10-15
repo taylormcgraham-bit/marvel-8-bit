@@ -4,7 +4,7 @@
  */
 import Phaser from "phaser";
 import type { Tile } from "@shared/maps";
-import { Buf, outline, shade, tone, mix } from "./buf";
+import { Buf, outline, shade, grain, tone } from "./buf";
 import { drawFigure, drawPortrait, FRAME_W, FRAME_H, DEFAULT_LOOK, type Look, type Palette, type Facing, type Pose } from "./figure";
 
 export const TILE = 16;
@@ -39,18 +39,65 @@ function canvas(scene: Phaser.Scene, key: string, w: number, h: number) {
 const skip = (key: string) => KEEP.has(key);
 function px(ctx: CanvasRenderingContext2D, x: number, y: number, c: string, w = 1, h = 1) { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); }
 
-/* ------------------------------------------------------------------ tiles */
+/* ------------------------------------------------------------------ tiles (block textures) */
 
-function gravel(ctx: CanvasRenderingContext2D, seed: number) {
-  px(ctx, 0, 0, PAL.roof, TILE, TILE);
-  for (let y = 0; y < TILE; y++) for (let x = 0; x < TILE; x++) {
+/** Minecraft-style bricks: 4 courses of 4px bricks with cream mortar, alternating offsets. */
+function bricks(b: Buf, w: number, h: number, brick: string, mortar: string, seed = 1) {
+  b.rect(0, 0, w, h, brick);
+  for (let row = 0; row * 4 < h; row++) {
+    const y = row * 4, off = row % 2 ? 4 : 0;
+    b.rect(0, y + 3, w, 1, mortar);
+    for (let x = off; x < w + 8; x += 8) b.rect(x % (w + 8) - (x >= w ? w + 8 : 0), y, 1, 3, mortar);
+    for (let x = -8 + off; x < w; x += 8) { b.rect(x + 1, y, 1, 3, tone(brick, 0.12)); b.rect(x + 1, y, 7, 1, tone(brick, 0.08)); b.rect(x + 1, y + 2, 7, 1, tone(brick, -0.12)); }
+  }
+  grain(b, 0.05, seed);
+}
+
+/** Minecraft gravel: mottled 2x2 blobs in four greys. */
+function gravelBlock(b: Buf, seed: number) {
+  const tones = ["#6a6a70", "#78787e", "#86868c", "#5c5c62", "#929298"];
+  b.rect(0, 0, b.w, b.h, tones[0]!);
+  for (let y = 0; y < b.h; y += 2) for (let x = 0; x < b.w; x += 2) {
     const r = hash(x, y, seed);
-    if (r > 0.94) { px(ctx, x, y, PAL.gravelLight); px(ctx, x + 1, y + 1, PAL.roofDark); }
-    else if (r > 0.86) px(ctx, x, y, PAL.gravel);
-    else if (r < 0.05) px(ctx, x, y, PAL.roofDark);
-    else if (r < 0.12) px(ctx, x, y, PAL.roofLight);
+    const c = tones[Math.floor(r * tones.length)]!;
+    b.rect(x, y, 2, 2, c);
+    if (r > 0.8) b.rect(x, y, 1, 1, tone(c, 0.15));
+    if (r < 0.2) b.rect(x + 1, y + 1, 1, 1, tone(c, -0.15));
   }
 }
+
+/** Minecraft cobblestone: rounded stones with dark seams. */
+function cobble(b: Buf, seed: number) {
+  b.rect(0, 0, b.w, b.h, "#4e4e56");
+  const stones = [[0, 0, 5, 4], [6, 0, 4, 3], [11, 0, 5, 5], [0, 5, 4, 5], [5, 4, 6, 5], [12, 6, 4, 4], [0, 11, 6, 5], [7, 10, 4, 6], [12, 11, 4, 5]];
+  stones.forEach(([x, y, w, h], i) => {
+    const c = tone("#7e7e88", (hash(i, 1, seed) - 0.5) * 0.3);
+    b.rect(x!, y!, w! - 1, h! - 1, c);
+    b.rect(x!, y!, w! - 1, 1, tone(c, 0.18)); b.rect(x!, y!, 1, h! - 1, tone(c, 0.1));
+    b.rect(x!, y! + h! - 2, w! - 1, 1, tone(c, -0.2));
+  });
+  grain(b, 0.05, seed);
+}
+
+/** Oak planks: 4 horizontal planks with end joints. */
+function planks(b: Buf, w: number, h: number, base = "#a8763e", seed = 1) {
+  b.rect(0, 0, w, h, base);
+  for (let row = 0; row * 4 < h; row++) {
+    const y = row * 4;
+    b.rect(0, y, w, 1, tone(base, 0.14)); b.rect(0, y + 3, w, 1, tone(base, -0.3));
+    const joint = (row * 5 + 3) % w; b.rect(joint, y, 1, 3, tone(base, -0.3));
+  }
+  grain(b, 0.05, seed);
+}
+
+/** Iron block: light top face, mid front face. */
+function ironBlock(b: Buf, topH: number) {
+  b.rect(0, 0, b.w, topH, "#d4d4dc"); b.rect(0, 0, b.w, 1, "#ececf2"); b.rect(0, topH - 1, b.w, 1, "#b4b4bc");
+  b.rect(0, topH, b.w, b.h - topH, "#a8a8b2"); b.rect(0, b.h - 1, b.w, 1, "#7c7c86"); b.rect(0, topH, 1, b.h - topH, "#bcbcc6"); b.rect(b.w - 1, topH, 1, b.h - topH, "#8c8c96");
+  grain(b, 0.04, 9);
+}
+
+const BRICK = "#9a5646", MORTAR = "#b8a890";
 
 export function makeTiles(scene: Phaser.Scene, keep: Set<string> = new Set()) {
   KEEP = keep;
@@ -58,70 +105,59 @@ export function makeTiles(scene: Phaser.Scene, keep: Set<string> = new Set()) {
   for (const k of kinds) {
     if (skip(`tile-${k}`)) continue;
     const { tex, ctx } = canvas(scene, `tile-${k}`, TILE, TILE);
+    const b = new Buf(TILE, TILE);
     switch (k) {
-      case "roof": gravel(ctx, 1); break;
-      case "void": px(ctx, 0, 0, PAL.night0, TILE, TILE); break;
-      case "ledge": {
-        px(ctx, 0, 0, PAL.brick, TILE, TILE);
-        for (let row = 0; row < 4; row++) {
-          const y = row * 4, off = row % 2 ? 4 : 0;
-          px(ctx, 0, y + 3, PAL.mortar, TILE, 1);
-          for (let x = off; x < TILE; x += 8) px(ctx, x, y, PAL.mortar, 1, 3);
-          for (let x = 0; x < TILE; x += 8) { px(ctx, (x + off + 1) % TILE, y, PAL.brickLight, 3, 1); px(ctx, (x + off + 5) % TILE, y + 2, PAL.brickDark, 2, 1); }
-        }
-        px(ctx, 0, 0, PAL.brickTop, TILE, 1);
-        break;
-      }
-      case "door": gravel(ctx, 2); break; // the bulkhead object is drawn over door tiles
-      case "tower-base": {
-        gravel(ctx, 5);
-        for (let y = 2; y < TILE; y += 7) px(ctx, 0, y, PAL.metalDark, TILE, 2);
-        break;
-      }
+      case "roof": gravelBlock(b, 1); break;
+      case "void": b.rect(0, 0, TILE, TILE, PAL.night0); break;
+      case "ledge": bricks(b, TILE, TILE, BRICK, MORTAR, 2); b.rect(0, 0, TILE, 1, tone(MORTAR, 0.2)); break;
+      case "door": gravelBlock(b, 2); break;
+      case "tower-base": cobble(b, 3); break;
       case "ac": {
-        gravel(ctx, 3);
-        px(ctx, 1, 2, PAL.black, 15, 14); // shadow
-        px(ctx, 0, 0, PAL.metalDark, 15, 15);
-        px(ctx, 1, 1, PAL.metal, 13, 4);   // top face
-        px(ctx, 1, 1, PAL.metalLight, 13, 1);
-        px(ctx, 1, 5, tone(PAL.metal, -0.25), 13, 9);  // front face
-        for (let y = 6; y < 13; y += 2) px(ctx, 3, y, PAL.metalDark, 9, 1);
-        px(ctx, 12, 2, PAL.metalDark, 1, 2);
+        gravelBlock(b, 3);
+        const box = new Buf(15, 15); ironBlock(box, 5);
+        for (let y = 7; y < 13; y += 2) box.rect(2, y, 11, 1, "#6c6c76");
+        box.rect(12, 1, 2, 2, "#8c8c96");
+        b.blit(box, 0, 0);
+        b.rect(1, 15, 15, 1, "#3a3a42"); // contact shadow
         break;
       }
       case "skylight": {
-        px(ctx, 0, 0, PAL.frame, TILE, TILE);
-        px(ctx, 1, 1, PAL.glass, 14, 14);
-        px(ctx, 7, 1, PAL.frame, 2, 14); px(ctx, 1, 7, PAL.frame, 14, 2);
-        for (let i = 0; i < 6; i++) { px(ctx, 2 + i, 2 + (5 - i), PAL.glassLight); px(ctx, 10 + i, 10 + (5 - i), PAL.glassLight); }
-        px(ctx, 2, 2, PAL.glassHi, 2, 1); px(ctx, 10, 10, PAL.glassHi, 2, 1);
-        px(ctx, 12, 2, PAL.glassHi); px(ctx, 13, 3, PAL.glassHi); px(ctx, 13, 4, PAL.white); px(ctx, 12, 5, PAL.glassHi);
-        px(ctx, 0, 0, tone(PAL.frame, 0.3), TILE, 1); px(ctx, 0, 0, tone(PAL.frame, 0.3), 1, TILE);
+        const g = "#7cc0f0";
+        b.rect(0, 0, TILE, TILE, g);
+        b.rect(0, 0, TILE, 1, "#eaf6ff"); b.rect(0, 0, 1, TILE, "#eaf6ff"); b.rect(0, TILE - 1, TILE, 1, "#c0dcf0"); b.rect(TILE - 1, 0, 1, TILE, "#c0dcf0");
+        for (let i = 2; i < 7; i++) { b.set(i, 8 - i, "#eaf6ff"); b.set(i + 7, 15 - i, "#eaf6ff"); }
+        b.rect(3, 3, 1, 1, "#ffffff"); b.rect(11, 10, 1, 1, "#ffffff");
+        b.rect(7, 1, 2, 14, "#5a7a98"); b.rect(1, 7, 14, 2, "#5a7a98"); // frame cross
+        grain(b, 0.03, 4);
         break;
       }
       case "vent": {
-        gravel(ctx, 4);
-        px(ctx, 7, 6, PAL.black, 7, 10); // shadow
-        px(ctx, 5, 3, PAL.metalDark, 6, 12);
-        px(ctx, 6, 4, PAL.metal, 3, 10);
-        px(ctx, 6, 4, PAL.metalLight, 1, 10);
-        px(ctx, 3, 1, PAL.metalLight, 10, 3); px(ctx, 3, 3, PAL.metalDark, 10, 1);
-        px(ctx, 5, 0, PAL.metal, 6, 1);
+        gravelBlock(b, 4);
+        const box = new Buf(8, 12); ironBlock(box, 3);
+        box.rect(2, 5, 4, 5, "#6c6c76"); box.rect(3, 6, 2, 3, "#2a2a32");
+        b.blit(box, 4, 2);
+        b.rect(5, 14, 8, 1, "#3a3a42");
         break;
       }
       case "stair": {
-        px(ctx, 0, 0, PAL.brick, TILE, TILE);
-        px(ctx, 4, 0, PAL.metalLight, 2, 16); px(ctx, 10, 0, PAL.metalLight, 2, 16);
-        px(ctx, 5, 0, PAL.metalDark, 1, 16); px(ctx, 11, 0, PAL.metalDark, 1, 16);
-        for (let y = 2; y < 16; y += 4) { px(ctx, 6, y, PAL.metal, 4, 1); px(ctx, 6, y + 1, PAL.metalDark, 4, 1); }
+        bricks(b, TILE, TILE, BRICK, MORTAR, 5);
+        const wood = "#8a6232";
+        b.rect(3, 0, 2, TILE, wood); b.rect(11, 0, 2, TILE, wood);
+        for (let y = 1; y < TILE; y += 4) { b.rect(5, y, 6, 2, wood); b.rect(5, y, 6, 1, tone(wood, 0.2)); }
         break;
       }
     }
-    tex.refresh();
+    b.draw(ctx); tex.refresh();
   }
-  // a soft shadow strip for the inner edge of parapets (ambient occlusion)
+  // front face of the parapet (2.5D): darker bricks, 7px tall
+  if (!skip("ledge-front")) {
+    const { tex, ctx } = canvas(scene, "ledge-front", TILE, 7);
+    const b = new Buf(TILE, 7); bricks(b, TILE, 7, tone(BRICK, -0.35), tone(MORTAR, -0.35), 6);
+    b.rect(0, 6, TILE, 1, "#2a1a14");
+    b.draw(ctx); tex.refresh();
+  }
   const s = canvas(scene, "ao-strip", TILE, 6);
-  for (let y = 0; y < 6; y++) px(s.ctx, 0, y, `rgba(0,0,0,${(0.42 * (6 - y)) / 6})`, TILE, 1);
+  for (let y = 0; y < 6; y++) px(s.ctx, 0, y, `rgba(0,0,0,${(0.4 * (6 - y)) / 6})`, TILE, 1);
   s.tex.refresh();
 }
 
@@ -129,38 +165,38 @@ export function makeTiles(scene: Phaser.Scene, keep: Set<string> = new Set()) {
 
 export function makeObjects(scene: Phaser.Scene, keep: Set<string> = new Set()) {
   KEEP = keep;
-  // water tower 52x64 with legs, tank, conical roof, ladder, highlight
+  // water tower 52x64 built from blocks: fence-post legs, plank tank with iron bands, stepped roof
   if (!skip("water-tower")) {
     const { tex, ctx } = canvas(scene, "water-tower", 52, 64);
     const b = new Buf(52, 64);
-    for (const lx of [8, 20, 32, 42]) b.rect(lx, 36, 2, 28, PAL.metalDark);
-    b.rect(8, 48, 36, 1, PAL.metalDark); b.rect(12, 58, 28, 1, PAL.metalDark);
-    for (let i = 0; i < 10; i++) { b.set(10 + i, 48 + i, PAL.metalDark); b.set(40 - i, 48 + i, PAL.metalDark); }
-    b.rect(6, 14, 40, 24, PAL.rust);
-    for (let y = 16; y < 38; y += 5) b.rect(6, y, 40, 1, PAL.rustDark);
-    b.rect(6, 14, 40, 1, PAL.metalDark); b.rect(6, 37, 40, 1, PAL.metalDark);
-    b.rect(10, 15, 3, 22, tone(PAL.rust, 0.25));
-    b.rect(40, 15, 4, 22, tone(PAL.rust, -0.3));
-    for (let r = 0; r < 10; r++) b.rect(4 + r * 2.2, 13 - r, 44 - r * 4.4, 1, r % 2 ? PAL.metal : PAL.metalDark);
-    b.rect(25, 1, 2, 3, PAL.metalLight);
-    b.rect(44, 14, 2, 46, PAL.metalLight); for (let y = 16; y < 60; y += 4) b.rect(42, y, 6, 1, PAL.metal);
-    outline(b); shade(b, undefined, 0.15, 0.2);
+    const post = "#4a3220";
+    for (const lx of [7, 19, 31, 43]) { b.rect(lx, 36, 3, 28, post); b.rect(lx, 36, 1, 28, tone(post, 0.2)); }
+    b.rect(7, 47, 39, 2, post); b.rect(10, 57, 33, 2, post);
+    const tank = new Buf(40, 24); planks(tank, 40, 24, "#a8763e", 7);
+    for (const y of [2, 12, 21]) { tank.rect(0, y, 40, 2, "#8c8c96"); tank.rect(0, y, 40, 1, "#c4c4ce"); }
+    tank.rect(0, 0, 2, 24, tone("#a8763e", 0.15)); tank.rect(38, 0, 2, 24, tone("#a8763e", -0.3));
+    b.blit(tank, 6, 14);
+    // stepped block roof
+    const roofC = "#5a5a66";
+    for (let r = 0; r < 4; r++) { b.rect(6 + r * 5, 13 - r * 3, 40 - r * 10, 3, tone(roofC, r * 0.08)); b.rect(6 + r * 5, 13 - r * 3, 40 - r * 10, 1, tone(roofC, 0.3)); }
+    b.rect(24, 0, 4, 2, "#9c9cae");
+    const ladder = "#8a6232"; b.rect(45, 14, 2, 46, ladder); b.rect(49, 14, 2, 46, ladder); for (let y = 16; y < 60; y += 4) b.rect(45, y, 6, 1, ladder);
+    grain(b, 0.04, 8); outline(b, "soft"); shade(b, null, 0.12, 0.2, true);
     b.draw(ctx); tex.refresh();
   }
-  // stairwell bulkhead 36x30: a boxy hut with a door on its front face
+  // stairwell bulkhead 36x30: cobblestone top face, brick front face, oak door
   if (!skip("bulkhead")) {
     const { tex, ctx } = canvas(scene, "bulkhead", 36, 30);
     const b = new Buf(36, 30);
-    b.rect(2, 2, 32, 8, PAL.brickLight);        // roof slab
-    b.rect(2, 10, 32, 18, PAL.brick);           // front face
-    for (let row = 0; row < 4; row++) { const y = 11 + row * 4, off = row % 2 ? 4 : 0; b.rect(2, y + 3, 32, 1, PAL.mortar); for (let x = 2 + off; x < 34; x += 8) b.rect(x, y, 1, 3, PAL.mortar); }
-    b.rect(12, 13, 12, 15, PAL.doorDark);        // door frame
-    b.rect(13, 14, 10, 14, PAL.door);
-    b.rect(14, 15, 3, 4, PAL.doorDark); b.rect(19, 15, 3, 4, PAL.doorDark); b.rect(14, 21, 3, 5, PAL.doorDark); b.rect(19, 21, 3, 5, PAL.doorDark);
-    b.set(21, 21, PAL.knob);
-    b.rect(26, 4, 6, 3, PAL.metalDark); b.rect(27, 1, 4, 3, PAL.metal); // vent cap on roof
-    b.rect(16, 8, 4, 2, PAL.yellow); // lamp over door
-    outline(b); shade(b, undefined, 0.18, 0.22);
+    const top = new Buf(32, 9); cobble(top, 11); b.blit(top, 2, 1);
+    const front = new Buf(32, 18); bricks(front, 32, 18, tone(BRICK, -0.15), tone(MORTAR, -0.15), 12); b.blit(front, 2, 10);
+    const door = new Buf(10, 16); planks(door, 10, 16, "#7a5428", 13);
+    door.rect(2, 2, 6, 4, "#2a3a4a"); door.rect(3, 3, 1, 1, "#7cc0f0"); door.rect(6, 3, 1, 1, "#7cc0f0"); door.rect(8, 10, 1, 1, "#e0b848");
+    b.blit(door, 13, 12);
+    b.rect(12, 11, 12, 1, "#2a1a14"); b.rect(12, 11, 1, 17, "#2a1a14"); b.rect(23, 11, 1, 17, "#2a1a14");
+    b.rect(15, 9, 6, 2, "#ffd860"); b.rect(16, 8, 4, 1, "#8c8c96"); // lamp over the door
+    b.rect(26, 2, 6, 4, "#8c8c96"); b.rect(27, 0, 4, 2, "#6c6c76");
+    grain(b, 0.03, 14); outline(b, "soft"); shade(b, null, 0.12, 0.2, true);
     b.draw(ctx); tex.refresh();
   }
   // shadows (soft ellipses)

@@ -190,11 +190,11 @@ in a scene, with prompt caching so the cost is paid once.
 
 See `docs/ART.md` for the sheet contract and the asset pipeline. The short version:
 
-- **16-bit, not 8-bit.** SNES Zelda tiles and overworld, TMNT arcade and Street Fighter
-  character presence, Shovel Knight polish. Outlined and shaded sprites, layered parallax
-  sky, lighting pools, scanlines optional.
+- **Blocky Minecraft-style, top-down, more detail than 8-bit.** Cube heads, boxy bodies,
+  soft edges instead of black outlines, block textures on every surface, a slight 2.5D
+  front face on walls and objects, layered parallax sky, lighting pools, scanlines optional.
 - **Sprites:** 24×34 characters on 16×16 tiles today (procedural rig); hand-drawn sheets
-  may be larger (32×48 for a Street Fighter feel) and drop in through the manifest.
+  may be larger and drop in through the manifest.
 - **Portraits:** 32×32 in a bevelled SNES-style dialogue window with a nameplate; comic
   caption boxes for narration ("MEANWHILE, IN LATVERIA…"); issue-cover title cards.
 - **Camera:** cinematic. Pans, zooms, slow-motion on finishing blows, letterboxing in

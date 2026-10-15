@@ -52,26 +52,51 @@ export function mix(a: string, b: string, k: number): string {
   return rgbToHex(r1 + (r2 - r1) * k, g1 + (g2 - g1) * k, b1 + (b2 - b1) * k);
 }
 
-/** Dark outline around every filled region (4-neighborhood). Mutates. */
-export function outline(buf: Buf, color = OUTLINE) {
-  const add: [number, number][] = [];
+/**
+ * Outline around every filled region (4-neighborhood). Mutates.
+ * With `color` = "soft", the outline is a darkened copy of the neighboring pixel instead of
+ * a flat black line, which is how blocky Minecraft-style sprites keep their silhouette
+ * without a cartoon edge.
+ */
+export function outline(buf: Buf, color: string | "soft" = OUTLINE) {
+  const add: [number, number, string][] = [];
   for (let y = 0; y < buf.h; y++) for (let x = 0; x < buf.w; x++) {
     if (buf.get(x, y)) continue;
-    if (buf.get(x - 1, y) || buf.get(x + 1, y) || buf.get(x, y - 1) || buf.get(x, y + 1)) add.push([x, y]);
+    const n = buf.get(x, y - 1) || buf.get(x - 1, y) || buf.get(x + 1, y) || buf.get(x, y + 1);
+    if (n) add.push([x, y, color === "soft" ? tone(n, -0.6) : color]);
   }
-  for (const [x, y] of add) buf.set(x, y, color);
+  for (const [x, y, c] of add) buf.set(x, y, c);
+}
+
+/** Per-pixel texture noise so flat fills read as material (deterministic). Mutates. */
+export function grain(buf: Buf, amount = 0.07, seed = 1) {
+  for (let y = 0; y < buf.h; y++) for (let x = 0; x < buf.w; x++) {
+    const c = buf.get(x, y);
+    if (!c) continue;
+    let h = (x * 374761393 + y * 668265263 + seed * 982451653) >>> 0;
+    h = (h ^ (h >>> 13)) * 1274126177; h >>>= 0;
+    const r = ((h ^ (h >>> 16)) >>> 0) / 4294967295;
+    buf.set(x, y, tone(c, (r - 0.5) * 2 * amount));
+  }
 }
 
 /**
  * Light from the top-left: pixels whose upper or left neighbor is outline/empty get a highlight;
  * pixels whose lower neighbor is outline/empty get a shadow. Reads like hand-shaded sprites.
  */
-export function shade(buf: Buf, outlineColor = OUTLINE, hi = 0.22, lo = 0.28) {
-  const isEdge = (c: string | null) => !c || c === outlineColor;
+export function shade(buf: Buf, outlineColor: string | null = OUTLINE, hi = 0.22, lo = 0.28, soft = false) {
+  // with soft outlines there is no single outline color; treat "much darker than me" as an edge
+  const isEdgeFor = (me: string) => (c: string | null) => {
+    if (!c) return true;
+    if (outlineColor && c === outlineColor) return true;
+    if (soft) { const [r1, g1, b1] = hexToRgb(me), [r2, g2, b2] = hexToRgb(c); return (r2 + g2 + b2) < (r1 + g1 + b1) * 0.5; }
+    return false;
+  };
   const out = new Buf(buf.w, buf.h);
   for (let y = 0; y < buf.h; y++) for (let x = 0; x < buf.w; x++) {
     const c = buf.get(x, y);
-    if (!c || c === outlineColor) { out.set(x, y, c); continue; }
+    if (!c || (outlineColor && c === outlineColor)) { out.set(x, y, c); continue; }
+    const isEdge = isEdgeFor(c);
     const below = isEdge(buf.get(x, y + 1)), above = isEdge(buf.get(x, y - 1)), left = isEdge(buf.get(x - 1, y));
     let v = c;
     if (below) v = tone(c, -lo);

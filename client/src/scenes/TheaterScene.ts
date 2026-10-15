@@ -141,8 +141,9 @@ export class TheaterScene extends Phaser.Scene {
       if (t === "void") continue;
       layer.add(this.add.image(x * TILE, y * TILE, `tile-${t}`).setOrigin(0));
     }
-    // ambient occlusion along the inside of the north and west parapets
-    for (let x = 1; x < this.map.width - 1; x++) layer.add(this.add.image(x * TILE, 3 * TILE, "ao-strip").setOrigin(0));
+    // 2.5D: the north parapet shows its front face, then a soft shadow on the gravel
+    for (let x = 0; x < this.map.width; x++) layer.add(this.add.image(x * TILE, 3 * TILE, "ledge-front").setOrigin(0));
+    for (let x = 1; x < this.map.width - 1; x++) layer.add(this.add.image(x * TILE, 3 * TILE + 7, "ao-strip").setOrigin(0));
     for (let y = 3; y < this.map.height - 1; y++) layer.add(this.add.image(1 * TILE, y * TILE, "ao-strip").setOrigin(0).setAngle(-90).setOrigin(1, 0));
     // objects with shadows, in the actor depth space so people walk behind them
     const towerX = 14 * TILE - 2, towerBaseY = 5 * TILE;
@@ -161,7 +162,7 @@ export class TheaterScene extends Phaser.Scene {
 
   private drawLighting() {
     // night wash
-    this.add.rectangle(0, 2 * TILE, VIEW_W, VIEW_H - 2 * TILE, 0x101040, 0.22).setOrigin(0).setDepth(500).setBlendMode(Phaser.BlendModes.MULTIPLY);
+    this.add.rectangle(0, 2 * TILE, VIEW_W, VIEW_H - 2 * TILE, 0x202060, 0.16).setOrigin(0).setDepth(500).setBlendMode(Phaser.BlendModes.MULTIPLY);
     // warm lamp over the stairwell door; cool glow up through the skylight
     const lamp = this.add.image(2 * TILE + 16, 12 * TILE + 2, "light-warm").setDepth(501).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.9);
     this.tweens.add({ targets: lamp, alpha: 0.7, duration: 90, yoyo: true, repeat: -1, repeatDelay: Phaser.Math.Between(1200, 3000) });

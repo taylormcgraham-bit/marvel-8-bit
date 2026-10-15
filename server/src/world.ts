@@ -114,7 +114,8 @@ export class World {
       case "rescue": { const a = this.actors.get(e.who); if (a) a.morale += 1; break; }
     }
     this.events.push(e);
-    fs.appendFileSync(this.logPath, JSON.stringify(e) + "\n");
+    try { fs.appendFileSync(this.logPath, JSON.stringify(e) + "\n"); }
+    catch { fs.mkdirSync(CONFIG.dataDir, { recursive: true }); fs.appendFileSync(this.logPath, JSON.stringify(e) + "\n"); }
   }
 
   transcript(n: number): string[] {
